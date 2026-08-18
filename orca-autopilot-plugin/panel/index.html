@@ -195,8 +195,124 @@
       color: var(--app-muted-fg);
       padding: 3px 6px;
       border-radius: calc(var(--app-radius) - 2px);
+    .view-switch-group {
+      display: flex;
+      background-color: var(--app-muted);
+      border: 1px solid var(--app-border);
+      border-radius: calc(var(--app-radius) - 2px);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .view-mode-btn {
+      background: none;
+      border: none;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--app-muted-fg);
+      padding: 3px 8px;
+      border-radius: calc(var(--app-radius) - 4px);
+      cursor: pointer;
+    }
+
+    .view-mode-btn.active {
+      background-color: var(--app-bg);
+      color: var(--app-fg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* List View Table */
+    .tasks-list-container {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      background-color: var(--app-bg);
+      border: 1px solid var(--app-border);
+      border-radius: var(--app-radius);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tasks-list-container.hidden {
+      display: none;
+    }
+
+    .list-table-header {
+      display: grid;
+      grid-template-columns: 50px 1fr 110px 110px 90px 140px;
+      padding: 8px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--app-muted-fg);
+      border-bottom: 1px solid var(--app-border);
+      background-color: var(--app-muted);
+    }
+
+    .list-table-row {
+      display: grid;
+      grid-template-columns: 50px 1fr 110px 110px 90px 140px;
+      padding: 10px 12px;
+      align-items: center;
+      font-size: 11px;
+      border-bottom: 1px solid var(--app-border);
+      transition: background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .list-table-row:hover {
+      background-color: var(--app-muted);
+    }
+
+    .list-id-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 600;
+      color: var(--app-muted-fg);
+    }
+
+    .list-title-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .list-title-text {
+      font-weight: 600;
+      color: var(--app-fg);
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .list-subtitle {
+      font-size: 10px;
+      color: var(--app-muted-fg);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .list-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 500;
+      border: 1px solid var(--app-border);
       background: var(--app-muted);
-      font-variant-numeric: tabular-nums;
+    }
+
+    .list-action-btns {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
     }
 
     /* Kanban Columns Grid - 7 Canonical Columns (including Tripartite Review) */
@@ -208,6 +324,11 @@
       min-height: 0;
       overflow-x: auto;
     }
+
+    .kanban-grid.hidden {
+      display: none;
+    }
+
 
     .kanban-lane {
       display: flex;
@@ -699,8 +820,15 @@
       <button class="filter-chip" data-filter="github">GitHub</button>
       <button class="filter-chip" data-filter="gitlab">GitLab</button>
     </div>
+
+    <div class="view-switch-group">
+      <button id="view-mode-board" class="view-mode-btn active" title="Kanban Board View">☷ Board</button>
+      <button id="view-mode-list" class="view-mode-btn" title="Orca Tasks List View">☰ List</button>
+    </div>
+
     <div class="stats-label" id="stats-badge">Loading...</div>
   </section>
+
 
   <!-- Kanban Lanes Grid (7 Canonical Columns) -->
   <main class="kanban-grid">
@@ -788,6 +916,20 @@
       <div class="cards-scroll-list" id="lane-cards-done"></div>
     </section>
   </main>
+
+  <!-- Orca Tasks List View (Alternative Flat View matching Orca Tasks Screen) -->
+  <div id="tasks-list-container" class="tasks-list-container hidden">
+    <div class="list-table-header">
+      <div>ID</div>
+      <div>TITLE / CONTEXT</div>
+      <div>ASSIGNEES</div>
+      <div>STATUS / LANE</div>
+      <div>UPDATED</div>
+      <div style="text-align:right;">ACTIONS</div>
+    </div>
+    <div id="tasks-list-body"></div>
+  </div>
+
 
   <!-- Slide-out Task Detail & Multi-Agent Log Drawer -->
   <div id="task-drawer" class="task-drawer-overlay hidden">
@@ -1073,7 +1215,28 @@ function initListeners() {
     })
   })
 
+  if (viewModeBoardBtn && viewModeListBtn) {
+    viewModeBoardBtn.addEventListener('click', function () {
+      currentViewMode = 'board'
+      viewModeBoardBtn.classList.add('active')
+      viewModeListBtn.classList.remove('active')
+      kanbanGridEl.classList.remove('hidden')
+      tasksListContainer.classList.add('hidden')
+      renderBoard()
+    })
+
+    viewModeListBtn.addEventListener('click', function () {
+      currentViewMode = 'list'
+      viewModeListBtn.classList.add('active')
+      viewModeBoardBtn.classList.remove('active')
+      kanbanGridEl.classList.add('hidden')
+      tasksListContainer.classList.remove('hidden')
+      renderListView()
+    })
+  }
+
   btnReload.addEventListener('click', function () {
+
     showToast('Refreshing tasks...')
     loadWorkspaceContext().then(loadTasks)
   })
@@ -1290,6 +1453,13 @@ function persistTasks() {
 }
 
 
+var currentViewMode = 'board'
+var viewModeBoardBtn = document.getElementById('view-mode-board')
+var viewModeListBtn = document.getElementById('view-mode-list')
+var kanbanGridEl = document.querySelector('.kanban-grid')
+var tasksListContainer = document.getElementById('tasks-list-container')
+var tasksListBody = document.getElementById('tasks-list-body')
+
 function renderBoard() {
   Object.values(laneContainers).forEach(function (el) { if (el) el.innerHTML = '' })
 
@@ -1328,7 +1498,79 @@ function renderBoard() {
   })
 
   statsBadge.textContent = filtered.length + ' tasks active'
+  renderListView()
 }
+
+function renderListView() {
+  if (!tasksListBody) return
+  tasksListBody.innerHTML = ''
+
+  var filtered = tasks.filter(function (t) {
+    if (activeFilter !== 'all' && t.source !== activeFilter) return false
+    if (searchQuery) {
+      var matchTitle = t.title.toLowerCase().indexOf(searchQuery) !== -1
+      var matchId = String(t.number).indexOf(searchQuery) !== -1
+      var matchLabels = (t.labels || []).some(function (l) { return l.toLowerCase().indexOf(searchQuery) !== -1 })
+      if (!matchTitle && !matchId && !matchLabels) return false
+    }
+    return true
+  })
+
+  if (filtered.length === 0) {
+    tasksListBody.innerHTML = '<div style="padding:24px;text-align:center;color:var(--app-muted-fg);font-size:11px;">No tasks match your filters.</div>'
+    return
+  }
+
+  filtered.forEach(function (t) {
+    var col = t.column || 'needs-triage'
+    var row = document.createElement('div')
+    row.className = 'list-table-row'
+    
+    var labelsHtml = (t.labels || []).map(function (label) {
+      return '<span class="card-label-badge" style="font-size:9px;">' + escapeHtml(label) + '</span>'
+    }).join(' ')
+
+    row.innerHTML = 
+      '<div class="list-id-badge">#' + escapeHtml(t.number) + '</div>' +
+      '<div class="list-title-cell">' +
+        '<div class="list-title-text">' + escapeHtml(t.title) + '</div>' +
+        '<div class="list-subtitle">' +
+          '<span>' + escapeHtml(t.source) + '</span> • ' +
+          (labelsHtml ? labelsHtml : '<span>no labels</span>') +
+        '</div>' +
+      '</div>' +
+      '<div>' + escapeHtml(t.assignee || 'Unassigned') + '</div>' +
+      '<div><span class="list-status-pill"><span class="agent-dot"></span> ' + escapeHtml(col) + '</span></div>' +
+      '<div style="color:var(--app-muted-fg);font-size:10px;">' + (t.updatedAt ? new Date(t.updatedAt).toLocaleTimeString() : 'now') + '</div>' +
+      '<div class="list-action-btns">' +
+        '<button class="orca-btn list-btn-run" style="padding:2px 6px;font-size:10px;background:var(--app-primary);color:var(--app-primary-fg);">🚀 Run</button>' +
+        '<button class="orca-btn list-btn-inspect" style="padding:2px 6px;font-size:10px;">Details</button>' +
+      '</div>'
+
+    row.addEventListener('click', function () {
+      openTaskDrawer(t)
+    })
+
+    var runBtn = row.querySelector('.list-btn-run')
+    if (runBtn) {
+      runBtn.addEventListener('click', function (e) {
+        e.stopPropagation()
+        runPipeline(t)
+      })
+    }
+
+    var inspectBtn = row.querySelector('.list-btn-inspect')
+    if (inspectBtn) {
+      inspectBtn.addEventListener('click', function (e) {
+        e.stopPropagation()
+        openTaskDrawer(t)
+      })
+    }
+
+    tasksListBody.appendChild(row)
+  })
+}
+
 
 function getAgentBadgeForColumn(column) {
   switch (column) {
