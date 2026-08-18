@@ -40,6 +40,19 @@ Orca ADE provides an autonomous development environment with worktrees and termi
 9. **Live Observation & Click-to-Focus**:
    - Clicking an active task card in `in-progress` immediately focuses the corresponding Worktree and streaming terminal pane in Orca.
 
+10. **Unlimited Concurrency**:
+   - Tasks in `ready-for-agent` spawn parallel isolated Git Worktrees and agent instances concurrently without artificial queue bottlenecks.
+
+11. **Automated Merge Conflict Resolution**:
+   - Rebase against `origin/main` automatically and activate the `/resolving-merge-conflicts` skill when concurrent branches cause merge conflicts upon PR creation.
+
+12. **Unconstrained Reasoning Budget**:
+   - No hard limits on turns or execution time per stage to allow the agent to solve deep, multi-file problems to completion.
+
+13. **Audit Trail & PR Summary**:
+   - Persist structured JSONL execution logs at `.agents/logs/<task-id>.jsonl` for full replayability, and automatically format summary logs into GitHub/GitLab Pull Request descriptions.
+
+
 
 ## Consequences
 - **Positive**:

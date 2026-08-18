@@ -183,3 +183,11 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 | **7** | **Truyền ngữ cảnh (Handoff)** | **Orca Orchestration Prompt Bridge** | Chuyển tiếp Spec và checklist Tracer-bullets qua prompt khởi tạo của Coder Agent trong Worktree. |
 | **8** | **Trải nghiệm Review & Diff** | **Tận dụng Trình xem Diff tích hợp của Orca** | Bấm vào thẻ ở cột `ready-for-human` sẽ mở trực tiếp Diff Viewer (`orca file open-changed --mode diff`) của Orca. |
 | **9** | **Giám sát Agent thời gian thực** | **Click-to-Focus Live Worktree & Terminal** | Bấm vào bất kỳ thẻ nào đang chạy trong `in-progress` sẽ chuyển focus ngay lập tức sang tab Worktree và Terminal đang stream của Agent đó. |
+
+### 🔹 Vòng 3: Khả năng Mở rộng, Xung đột & Giám sát (Concurrency, Conflicts & Telemetry)
+| STT | Trục Quyết định | Quyết định Thống nhất | Chi tiết Triển khai |
+| :--- | :--- | :--- | :--- |
+| **10** | **Chạy song song (Concurrency)** | **Song song không giới hạn (Unlimited Parallel)** | Mọi task rơi vào `ready-for-agent` đều được tạo riêng Git Worktree và kích hoạt Agent chạy đồng thời. |
+| **11** | **Xử lý xung đột (Merge Conflicts)** | **Tự động kích hoạt `/resolving-merge-conflicts`** | Khi có nhánh vừa merge vào `main`, các nhánh Agent khác tự động rebase `origin/main` và áp dụng skill giải quyết xung đột; chỉ gọi dev khi quá phức tạp. |
+| **12** | **Rào chắn chạy lặp (Guardrails)** | **Không giới hạn bước (No Arbitrary Limit)** | Cho phép Agent tự do suy nghĩ sâu và chạy đủ các lượt cần thiết để giải quyết triệt để vấn đề mà không bị ngắt quãng giữa chừng. |
+| **13** | **Lưu vết & Báo cáo (Audit Trail)** | **Lưu JSONL (`.agents/logs/`) + Tóm tắt vào PR** | Ghi log JSONL chi tiết từng bước/tool-call để replay khi cần; tự động sinh bản tóm tắt thay đổi và kết quả test chèn vào mô tả Pull Request. |
