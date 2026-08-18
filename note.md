@@ -220,15 +220,48 @@ Trong `src/main/runtime/orca-runtime.ts` (L14202-L14224), phương thức `dispa
 
 ---
 
-## 11. Hợp Nhất Động Cơ DeepSeek Harness (DSH) & Orca Browser CDP
+## 11. Quyết Định Kiến Trúc: Thuần Orca Native Orchestrator vs DSH
 
-Rà soát `ref/deepseek-harness` và hệ thống Browser Automation của Orca (`ref/orca/src/main/browser`):
+So sánh và đánh giá 2 hướng kiến trúc để hiện thực hóa bài toán **Tự động hóa 100% theo Matt Pocock Skills**:
 
-### 🤖 1. DeepSeek Harness (`dsh`) làm Coder Engine
-- **Cấu trúc Plugin Cordis**: `dsh` xây dựng trên kiến trúc micro-plugin (`packages/subagent`, `packages/mcp`, `packages/workflow`, `packages/plan`, `packages/e2b`).
-- **Khả năng phối hợp**: Cung cấp khả năng suy luận sâu (DeepSeek Reasoning R1/V3) và tự spawn Subagents nội bộ cho các tác vụ thuật toán hoặc backend phức tạp.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔴 HƯỚNG A: Dùng DSH làm Động cơ Workflow trung gian                        │
+│ Kanban -> Orca Plugin -> Chuyển task sang DSH Server -> DSH Subagents      │
+│ ❌ Điểm trừ: Phải chạy song song 2 runtime, tốn RAM, dư thừa nhiều tầng.    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🟢 HƯỚNG B (ĐƯỢC CHỌN): Tự hành 100% trên Nền tảng Orca + Plugin Worker     │
+│ Kanban -> Orca Plugin Worker (Node.js ngầm) -> Điều phối trực tiếp các Agent│
+│ 🌟 Ưu điểm: Siêu tinh gọn, chạy 100% tự động từ A-Z, không cần cài DSH,     │
+│             gọi được trực tiếp mọi Agent (Claude Code, Codex, Pi...).       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-### 🌐 2. Orca Browser Automation qua Chrome DevTools Protocol (CDP)
-Trong `src/main/browser/cdp-bridge.ts` và `snapshot-engine.ts`:
-- Orca tích hợp sẵn headless browser tự động hóa thông qua accessibility tree snapshot (`orca snapshot`).
+- **Vai trò của DSH**: DSH không phải là tầng bắt buộc của hệ thống. DSH chỉ là **1 trong các tùy chọn Agent Engine** trong danh mục của Orca nếu người dùng muốn chạy model DeepSeek R1/V3.
+- **Bộ não điều phối 100% tự hành**: Nằm hoàn toàn trong tiến trình Node.js ngầm của Plugin (`orca-autopilot-plugin/lib/pipeline-orchestrator.mjs`).
+
+---
+
+## 12. Khám Phá: Cơ Chế Coordinator & Orchestration Sẵn Có Trong Orca
+
+Soi vào thư mục `ref/orca/src/main/runtime/orchestration/`:
+- **`coordinator.ts`**: Orca đã xây dựng sẵn một máy trạng thái **DAG Coordinator**:
+  ```ts
+  type CoordinatorState = {
+    runId: string
+    phase: 'decomposing' | 'dispatching' | 'monitoring' | 'merging' | 'done'
+    completedTasks: string[]
+    failedTasks: string[]
+    escalations: MessageRow[]
+  }
+  ```
+- **`db.ts` & `OrchestrationDb`**: Orca sở hữu cơ chế lưu trữ SQLite quản lý hàng đợi task, mailbox trao đổi tin nhắn giữa các Agent và lưu vết tiến độ.
+- $\rightarrow$ *Ứng dụng:* Plugin AutoPilot tận dụng trực tiếp các API và cấu trúc dữ liệu này của Orca để tối ưu hóa hiệu năng điều phối.
+
+---
+
+## 13. Khám Phá: Tự Động Hóa Kiểm Thử Web/UI qua Orca Browser CDP
+
+Trong `ref/orca/src/main/browser/cdp-bridge.ts` và `snapshot-engine.ts`:
+- Orca tích hợp sẵn headless browser tự động hóa thông qua Chrome DevTools Protocol (CDP) và accessibility tree snapshot (`orca snapshot`).
 - $\rightarrow$ *Ứng dụng cho QA/Reviewer Agent:* Khi task là phát triển Web/UI, Reviewer Agent có thể tự khởi động dev server trong Worktree, dùng lệnh `orca snapshot` và `orca eval` để kiểm tra giao diện thực tế, chụp ảnh màn hình và đính kèm vào Pull Request trên GitHub!

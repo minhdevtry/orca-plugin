@@ -49,15 +49,19 @@ Orca ADE provides an autonomous development environment with worktrees and termi
 12. **Unconstrained Reasoning Budget**:
    - No hard limits on turns or execution time per stage to allow the agent to solve deep, multi-file problems to completion.
 
-13. **Audit Trail & PR Summary**:
-   - Persist structured JSONL execution logs at `.agents/logs/<task-id>.jsonl` for full replayability, and automatically format summary logs into GitHub/GitLab Pull Request descriptions.
+14. **Plugin-Native Orchestrator vs External Harnesses**:
+   - The multi-agent state machine (`/to-spec` -> `/implement` -> `/code-review` -> `gh pr create`) runs entirely inside the plugin's background Node.js worker (`pipeline-orchestrator.mjs`).
+   - External frameworks like DeepSeek Harness (DSH) are treated as optional Agent Providers, eliminating the need to run dual daemons or separate background servers.
 
-
+15. **Orca Browser CDP & UI Verification**:
+   - For frontend tasks, Reviewer/QA agents leverage Orca's built-in Chrome DevTools Protocol (CDP) accessibility snapshot engine (`orca snapshot`, `orca click`, `orca eval`) for end-to-end visual and functional verification.
 
 ## Consequences
 - **Positive**:
+  - Pure lean architecture: Zero external runtime daemon required beyond Orca ADE.
   - Zero external dependency on third-party bots (Telegram/Discord).
   - Native look and feel matching Orca's dark/light design tokens and components.
   - Strict compliance with `mattpocock/skills` engineering workflow.
 - **Negative**:
   - Full autonomy requires robust unit tests and sandboxed worktrees to prevent unconstrained agent loops.
+
