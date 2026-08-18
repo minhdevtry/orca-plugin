@@ -90,16 +90,11 @@ echo "✅ Đã pre-approve Custom API Key cho MiniMax-M3"
 mkdir -p "$USER_HOME/.config/environment.d"
 cat << EOF > "$USER_HOME/.config/environment.d/10-claude.conf"
 PATH=$USER_HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ANTHROPIC_BASE_URL="https://aiapi.2tocom.space"
-ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU"
-ANTHROPIC_MODEL="MiniMax-M3"
-ANTHROPIC_SMALL_FAST_MODEL="MiniMax-M3"
-CLAUDE_CONFIG_DIR=$USER_HOME/.claude-ide
 EOF
 
-# Nạp vào systemd session nếu có
-systemctl --user import-environment ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL CLAUDE_CONFIG_DIR 2>/dev/null || true
-echo "✅ Đã cấu hình systemd user environment tại ~/.config/environment.d/10-claude.conf"
+# Xóa các biến môi trường MiniMax khỏi session toàn cục để Claude gốc luôn là mặc định
+systemctl --user unset-environment ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL CLAUDE_CONFIG_DIR 2>/dev/null || true
+echo "✅ Đã cấu hình PATH sạch tại ~/.config/environment.d/10-claude.conf (Official Claude là mặc định)"
 
 # 5. Cài đặt Standalone Antigravity CLI (agy) & Pre-complete onboarding
 if ! command -v agy >/dev/null 2>&1 || [ -L "$USER_HOME/.local/bin/agy" ]; then
