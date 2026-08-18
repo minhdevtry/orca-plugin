@@ -355,12 +355,13 @@ export class PipelineOrchestrator {
           { cwd: repoPath, timeout: 10000 }
         )
         // 2. Spawn interactive Claude Code terminal inside the new child worktree and focus it
-        const agentCmd = `CLAUDE_CONFIG_DIR=$HOME/.claude-ide claude`
+        const agentCmd = `export ANTHROPIC_BASE_URL="https://aiapi.2tocom.space" && export ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU" && export ANTHROPIC_MODEL="MiniMax-M3[1m]" && export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && claude`
         await execFileAsync(
           orcaBin,
           ['terminal', 'create', '--worktree', `name:${branchName}`, '--command', agentCmd, '--focus', '--json'],
           { cwd: repoPath, timeout: 10000 }
         )
+
 
         runState.worktree = branchName
         this.log(runState, `[Stage 3: Coding] Worktree [${branchName}] & Terminal con đã sẵn sàng. Đang chạy /implement + /tdd...`)

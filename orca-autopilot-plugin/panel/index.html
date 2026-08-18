@@ -2027,7 +2027,7 @@ async function runPipeline(task) {
     var activeTermId = ctxRes && ctxRes.data && ctxRes.data.terminals && ctxRes.data.terminals[0] ? ctxRes.data.terminals[0].id : null
     if (activeTermId) {
       var isMiniMax = true // Sử dụng MiniMax-M3 qua ~/.claude-ide
-      var configPrefix = isMiniMax ? 'export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && ' : ''
+      var configPrefix = isMiniMax ? 'export ANTHROPIC_BASE_URL="https://aiapi.2tocom.space" && export ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU" && export ANTHROPIC_MODEL="MiniMax-M3[1m]" && export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && ' : ''
       var terminalCmd = configPrefix + 'echo "================================================================="\n' +
         'echo "🚀 [Orca AutoPilot] GIAO VIỆC: Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '"\n' +
         'echo "  📋 Mô tả: ' + (task.body || task.title).replace(/"/g, '\\"').replace(/\n/g, ' ') + '"\n' +
@@ -2035,6 +2035,7 @@ async function runPipeline(task) {
         'echo "  🤖 Model: MiniMax-M3 (qua ~/.claude-ide)"\n' +
         'echo "================================================================="\n' +
         'git status --short\n'
+
 
       await callHost('terminal.sendText', {
         terminalId: activeTermId,
