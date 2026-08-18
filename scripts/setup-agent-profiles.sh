@@ -101,7 +101,44 @@ EOF
 systemctl --user import-environment ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL CLAUDE_CONFIG_DIR 2>/dev/null || true
 echo "✅ Đã cấu hình systemd user environment tại ~/.config/environment.d/10-claude.conf"
 
-# 5. Cài đặt plugin vào Orca
+# 5. Cài đặt Standalone Antigravity CLI (agy) & Pre-complete onboarding
+if ! command -v agy >/dev/null 2>&1 || [ -L "$USER_HOME/.local/bin/agy" ]; then
+  echo "📦 Đang cài đặt Google Antigravity CLI (agy)..."
+  rm -f "$USER_HOME/.local/bin/agy"
+  curl -fsSL https://antigravity.google/cli/install.sh | bash
+fi
+
+mkdir -p "$USER_HOME/.gemini/antigravity-cli"
+cat << 'EOF' > "$USER_HOME/.gemini/antigravity-cli/settings.json"
+{
+  "enableTelemetry": false,
+  "hasAgreedToTerms": true,
+  "trustedWorkspaces": [
+    "/home/minhdn3",
+    "/home/minhdn3/Documents/orca-dhs",
+    "/home/minhdn3/orca/workspaces/orca-dhs"
+  ]
+}
+EOF
+
+cat << 'EOF' > "$USER_HOME/.gemini/antigravity-cli/jetski_state.pbtxt"
+post_onboarding:  {
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_MANAGER_WELCOME
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_USAGE_MODE
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_AGENT_CONFIGURATION
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_ADD_WORKSPACE
+}
+seen_nuxs: {
+  uids: 31
+  uids: 29
+  uids: 24
+  uids: 23
+}
+agent_onboarding_completed: AGENT_ONBOARDING_STATE_COMPLETED
+EOF
+echo "✅ Đã cấu hình Antigravity CLI (agy) & pre-complete onboarding"
+
+# 6. Cài đặt plugin vào Orca
 if [ -d "orca-autopilot-plugin" ]; then
   cd orca-autopilot-plugin
   npm test
@@ -111,4 +148,5 @@ elif [ -f "package.json" ] && grep -q "orca-autopilot" package.json; then
   node scripts/install-orca-plugin.mjs .
 fi
 
-echo "🎉 [HOÀN TẤT] Môi trường Dual-Profile Orca ADE đã sẵn sàng 100%!"
+echo "🎉 [HOÀN TẤT] Môi trường Triple-Agent (Claude Official + MiniMax-M3 + Antigravity CLI) đã sẵn sàng 100%!"
+
