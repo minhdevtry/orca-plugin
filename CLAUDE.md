@@ -52,38 +52,41 @@ orca terminal create \
 
 ---
 
-### Bước 3: Giao Task Kèm Cơ Chế Báo Cáo Ngược (Report-Back Protocol)
-Từ JSON trả về của lệnh tạo terminal, lấy `result.terminal.handle` của con (ví dụ `term_child`) và lấy handle của cha (ví dụ `term_parent` qua `orca terminal list --worktree active --json`):
+### Bước 3: Giao Task Cho Subagent
+Từ JSON trả về của lệnh tạo terminal, lấy `result.terminal.handle` của con (ví dụ `term_child`):
 
 ```bash
 orca terminal send \
   --terminal <childHandle> \
-  --text "Nhiệm vụ của bạn: /implement task #<id>. Hãy kiểm tra CONTEXT.md và viết unit tests /tdd. Khi hoàn thành toàn bộ, hãy chạy lệnh sau để báo cáo lại cho Parent Agent: orca terminal send --terminal <parentHandle> --text 'Subagent đã hoàn thành task #<id>. Đã chạy test và commit xong!' --enter --json" \
+  --text "Nhiệm vụ của bạn: /implement task #<id>. Hãy kiểm tra CONTEXT.md và viết unit tests /tdd." \
   --enter \
   --json
 ```
 
 ---
 
-### Bước 4: Kiểm Tra Tiến Độ & Đợi Kết Quả (Native Orca Wait)
+### Bước 4: Parent Đợi Subagent Natively & Thu Thập Báo Cáo (`orca terminal wait` + `read`)
 
-#### Cách 1: Đợi Tác Tử Con Hoàn Thành Natively (Non-blocking hoặc Blocking):
+Thay vì bắt con gửi ngược tin nhắn vào `stdin` của cha (gây rối loạn luồng suy nghĩ), Parent Agent sử dụng cơ chế **Native Wait & Read** chuẩn của Orca:
+
+#### 1. Đợi Subagent Hoàn Thành Turn (`tui-idle`):
 ```bash
-# Chờ cho đến khi Subagent xong turn và quay về trạng thái idle:
+# Parent chờ đến khi Subagent xong turn và quay về trạng thái idle:
 orca terminal wait --terminal <childHandle> --for tui-idle --timeout-ms 300000 --json
 ```
 
-#### Cách 2: Đọc Trực Tiếp Output Cuối Cùng Của Subagent:
+#### 2. Thu Thập Output & Báo Cáo Của Subagent:
 ```bash
-# Đọc 50 dòng kết quả mới nhất của Subagent:
+# Đọc 50 dòng kết quả mới nhất của Subagent để tổng hợp:
 orca terminal read --terminal <childHandle> --limit 50 --json
 ```
 
-#### Cách 3: Mở Trình Soi Diff Của Worktree Con:
+#### 3. Soi Diff Trực Tiếp Của Worktree Con (Nếu có thay đổi code):
 ```bash
 # Mở ngay Diff viewer của Worktree con để review:
 orca file open-changed --mode diff --worktree "name:agent/task-<id>" --json
 ```
+
 
 
 ---
