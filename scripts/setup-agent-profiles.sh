@@ -151,7 +151,7 @@ cat << 'EOF' > "$USER_HOME/.local/bin/claude"
 #!/usr/bin/env bash
 # Official Claude Code Launcher (Sonnet 5 / Claude Team)
 # Strips custom gateway variables to guarantee Official Claude
-exec env -u ANTHROPIC_BASE_URL -u ANTHROPIC_API_KEY -u ANTHROPIC_MODEL -u ANTHROPIC_SMALL_FAST_MODEL -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_DISABLE_LOGIN_PROMPT -u CLAUDE_CODE_DONT_ASK_PERMISSIONS "$HOME/.local/bin/claude-official-bin" "$@"
+exec env -u ANTHROPIC_BASE_URL -u ANTHROPIC_API_KEY -u ANTHROPIC_MODEL -u ANTHROPIC_SMALL_FAST_MODEL -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_DISABLE_LOGIN_PROMPT -u CLAUDE_CODE_DONT_ASK_PERMISSIONS "$HOME/.local/bin/claude-official-bin" --permission-mode bypassPermissions --dangerously-skip-permissions "$@"
 EOF
 chmod +x "$USER_HOME/.local/bin/claude"
 
