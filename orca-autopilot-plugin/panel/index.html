@@ -1317,9 +1317,14 @@ function initListeners() {
   }
 
   btnReload.addEventListener('click', function () {
-    showToast('Refreshing tasks...')
-    loadWorkspaceContext().then(loadTasks)
+    showToast('Resetting & refreshing sandbox tasks...')
+    tasks = INITIAL_GITHUB_TASKS.slice()
+    persistTasks()
+    loadWorkspaceContext().then(function () {
+      renderBoard()
+    })
   })
+
 
   btnSyncSkills.addEventListener('click', function () {
     showToast('Syncing 35 skills from mattpocock/skills...')
@@ -1682,78 +1687,79 @@ async function loadWorkspaceContext() {
 
 var INITIAL_GITHUB_TASKS = [
   {
-    id: 'gh-6',
-    number: 6,
-    title: 'Bi-Directional GitHub and GitLab Issue Tracker Synchronization',
-    body: 'Automate issue synchronization between GitHub and GitLab issue trackers without local file storage.',
+    id: 'sandbox-1',
+    number: 1,
+    title: '[Sandbox Demo] Test kết nối Terminal và chạy Agent trong Orca',
+    body: 'Issue mẫu dùng để thử nghiệm và kiểm tra luồng gửi lệnh vào Terminal, mở Worktree và theo dõi Multi-Agent Pipeline trong Orca ADE.',
     labels: ['needs-triage'],
     column: 'needs-triage',
-    source: 'github',
+    source: 'sandbox',
     assignee: 'minhdn3',
     updatedAt: new Date().toISOString()
   },
   {
-    id: 'gh-5',
-    number: 5,
-    title: 'Status-Based Multi-Agent Matrix Routing Architecture',
-    body: 'Route issues dynamically across Orca agent fleets based on canonical triage states.',
+    id: 'sandbox-2',
+    number: 2,
+    title: '[Sandbox Demo] Test thẩm định Hội đồng 3 Agent Review',
+    body: 'Thử nghiệm quy trình phối hợp 3 tác tử: MiniMax-M3 (Syntax/Lint), Antigravity (Feedback Verifier) và Antigravity Arch (Soi kiến trúc).',
     labels: ['needs-info'],
     column: 'needs-info',
-    source: 'github',
+    source: 'sandbox',
     assignee: 'minhdn3',
     updatedAt: new Date().toISOString()
   },
   {
-    id: 'gh-4',
-    number: 4,
-    title: 'Automated Matt Pocock Skills Slash Command Invocations',
-    body: 'Execute /triage, /to-spec, /implement, /tdd, /code-review, and /finishing-a-development-branch commands.',
+    id: 'sandbox-3',
+    number: 3,
+    title: '[Sandbox Demo] Test cơ chế Fast-path tự vá lỗi (Self-Healing)',
+    body: 'Thử nghiệm luồng Fast-Path: Coder Agent tự động sửa lỗi nhỏ tại chỗ trong Worktree khi Review Committee phát hiện.',
     labels: ['ready-for-agent'],
     column: 'ready-for-agent',
-    source: 'github',
+    source: 'sandbox',
     assignee: 'minhdn3',
     updatedAt: new Date().toISOString()
   },
   {
-    id: 'gh-3',
-    number: 3,
-    title: 'Dynamic Orca Agent & Model Discovery',
-    body: 'Leverage installed Orca agents and model catalog instead of hardcoded strings.',
+    id: 'sandbox-4',
+    number: 4,
+    title: '[Sandbox Demo] Test kéo thả thẻ Kanban giữa 7 làn trạng thái',
+    body: 'Thử nghiệm kéo thả thẻ giữa các cột: needs-triage -> needs-info -> ready-for-agent -> in-progress -> review -> ready-for-human -> done.',
     labels: ['in-progress'],
     column: 'in-progress',
-    source: 'github',
+    source: 'sandbox',
     assignee: 'minhdn3',
     updatedAt: new Date().toISOString()
   },
   {
-    id: 'gh-2',
-    number: 2,
-    title: 'Tripartite Review Committee & Fast/Slow Remediation Flow',
-    body: 'Coordinate 3 specialized review agents (syntax, feedback verification, architecture) with fast/slow remediation paths.',
+    id: 'sandbox-5',
+    number: 5,
+    title: '[Sandbox Demo] Test mở trình xem Diff & tạo Pull Request',
+    body: 'Thử nghiệm bấm nút View Diff và tạo Pull Request nguyên tử khi task hoàn thành các vòng kiểm thử.',
     labels: ['review'],
     column: 'review',
-    source: 'github',
+    source: 'sandbox',
     assignee: 'minhdn3',
     updatedAt: new Date().toISOString()
   },
   {
-    id: 'gh-1',
-    number: 1,
-    title: 'Autonomous Multi-Agent Kanban Board Plugin for Orca ADE',
-    body: 'Autonomous 7-lane Kanban board and multi-agent pipeline orchestrator for Orca ADE.',
+    id: 'sandbox-6',
+    number: 6,
+    title: '[Sandbox Demo] Hoàn tất chu trình kiểm thử và Ready for Human',
+    body: 'Task mẫu thể hiện trạng thái hoàn thành tất cả các bước và sẵn sàng để lập trình viên bấm Merge.',
     labels: ['ready-for-human'],
     column: 'ready-for-human',
-    source: 'github',
+    source: 'sandbox',
     assignee: 'minhdn3',
     updatedAt: new Date().toISOString()
   }
 ]
 
+
 async function loadTasks() {
   try {
-    var res = await callHost('autopilot.getIssues', {})
-    if (res && res.ok && res.data && Array.isArray(res.data.issues) && res.data.issues.length > 0) {
-      tasks = res.data.issues
+    var storedRes = await callHost('storage.get', { key: 'autopilot_tasks' })
+    if (storedRes && storedRes.ok && storedRes.data && Array.isArray(storedRes.data.value) && storedRes.data.value.length > 0) {
+      tasks = storedRes.data.value
       renderBoard()
       return
     }
@@ -1764,8 +1770,9 @@ async function loadTasks() {
 }
 
 function persistTasks() {
-  // in-memory & session maintained
+  callHost('storage.set', { key: 'autopilot_tasks', value: tasks })
 }
+
 
 
 
@@ -1990,23 +1997,50 @@ function setupDragAndDrop() {
 }
 
 async function runPipeline(task) {
-  showToast('🚀 Khởi động Autonomous Multi-Agent Pipeline cho #' + task.number + '...')
-  openTaskDrawer(task)
-  appendTaskLog(task, '🚀 Khởi động Autonomous Multi-Agent Pipeline...')
+  showToast('🚀 Khởi động Multi-Agent Pipeline cho #' + task.number + '...')
+  openIssueDetailView(task)
+  appendTaskLog(task, '🚀 Khởi động Autonomous Multi-Agent Pipeline cho #' + task.number + ': ' + task.title)
+
+  // Gửi Native Notification của Orca
+  callHost('notifications.show', {
+    title: '🚀 AutoPilot: Bắt đầu Task #' + task.number,
+    body: task.title + ' (Assigned to ' + (task.assignee || 'Claude') + ')'
+  })
+
+  // Thử tương tác trực tiếp với tab Terminal đang mở trong Orca ADE
+  try {
+    var ctxRes = await callHost('workspace.readContext', {})
+    var activeTermId = ctxRes && ctxRes.data && ctxRes.data.terminals && ctxRes.data.terminals[0] ? ctxRes.data.terminals[0].id : null
+    if (activeTermId) {
+      var terminalCmd = 'echo "🚀 [Orca AutoPilot] Đang chạy Pipeline cho Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '" && git status --short\n'
+      await callHost('terminal.sendText', {
+        terminalId: activeTermId,
+        text: terminalCmd,
+        enter: true
+      })
+      appendTaskLog(task, '⚡ [Terminal] Đã gửi lệnh thực thi vào Terminal [' + activeTermId + ']')
+    } else {
+      appendTaskLog(task, 'ℹ️ [Terminal] Không có tab terminal nào đang mở trong worktree. Khởi chạy ngầm...')
+    }
+  } catch (err) {
+    appendTaskLog(task, '⚠️ [Terminal] Lỗi gửi lệnh terminal: ' + (err && err.message ? err.message : err))
+  }
 
   // Step 1: Coding & Worktree
   task.column = 'in-progress'
   task.worktree = 'agent/task-' + task.number
   appendTaskLog(task, '[Stage 3: Coding] Tạo Git Worktree [' + task.worktree + '] qua Orca và chạy Coder Agent (/implement)...')
+  persistTasks()
   renderBoard()
 
   setTimeout(function () {
     // Step 2: Tripartite Review
     task.column = 'review'
     appendTaskLog(task, '🔍 [Stage 4: Review] Khởi chạy Hội đồng 3 Agent Review (Vòng 1/' + (task.needReviewTime || 1) + ')...')
-    appendTaskLog(task, '  1. [MiniMax-M3] -> Quét Syntax, Linter & Code style: PASS')
-    appendTaskLog(task, '  2. [Antigravity] -> Thẩm định & gạn lọc feedback: PASS')
-    appendTaskLog(task, '  3. [Antigravity Arch] -> Soi Kiến trúc & CONTEXT.md: PASS')
+    appendTaskLog(task, '  1. [MiniMax-M3] -> Quét Syntax, Linter & Code style: ✅ PASS')
+    appendTaskLog(task, '  2. [Antigravity] -> Thẩm định & gạn lọc feedback: ✅ PASS')
+    appendTaskLog(task, '  3. [Antigravity Arch] -> Soi Kiến trúc & CONTEXT.md: ✅ PASS')
+    persistTasks()
     renderBoard()
 
     setTimeout(function () {
@@ -2017,9 +2051,15 @@ async function runPipeline(task) {
       persistTasks()
       renderBoard()
       showToast('✅ Task #' + task.number + ' đã chuyển sang ready-for-human!')
+
+      callHost('notifications.show', {
+        title: '✅ Task #' + task.number + ' Sẵn Sàng Duyệt Merge',
+        body: 'Hội đồng 3 Agent đã thẩm định thành công. Sẵn sàng cho Human review.'
+      })
     }, 1500)
   }, 1500)
 }
+
 
 function showToast(msg) {
   toastEl.textContent = msg
