@@ -98,21 +98,28 @@ export async function resolveOrcaBinary() {
   if (process.env.ORCA_CLI_COMMAND) return process.env.ORCA_CLI_COMMAND
   if (process.env.NODE_ENV === 'test') return null
 
-  // 1. Try orca-ide on PATH
+  const home = process.env.HOME || ''
+  const candidates = [
+    join(home, '.local/bin/orca'),
+    join(home, '.local/bin/orca-ide'),
+    join(home, '.config/orca/linux-orca-cli-shim/orca'),
+    join(home, '.local/share/orca/app/orca-ide')
+  ]
+
+  for (const p of candidates) {
+    if (existsSync(p)) return p
+  }
+
+  // Try which orca-ide
   try {
     const { stdout } = await execFileAsync('which', ['orca-ide'])
     if (stdout.trim()) return stdout.trim()
   } catch (e) {}
 
-  // 2. Try default user local install path
-  const defaultLinuxPath = join(process.env.HOME || '', '.local/share/orca/app/orca-ide')
-  if (existsSync(defaultLinuxPath)) return defaultLinuxPath
-
-  // 3. Inside Orca managed terminal
   if (process.env.ORCA_TERMINAL_ID) return 'orca'
-
   return null
 }
+
 
 /**
  * Dynamically loads user fleet configuration from .agents/config/autopilot.json

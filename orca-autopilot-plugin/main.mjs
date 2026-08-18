@@ -3,6 +3,8 @@ import { syncMattPocockSkills, listMattPocockSkills } from './lib/skills-sync.mj
 import { PipelineOrchestrator } from './lib/pipeline-orchestrator.mjs'
 import { sendNotification } from './lib/notification-relay.mjs'
 import { discoverInstalledOrcaAgents } from './lib/orca-agent-discovery.mjs'
+import { setupWorktreeEnvironment } from './lib/worktree-setup.mjs'
+
 
 
 export default function activate(orca) {
@@ -77,7 +79,14 @@ export default function activate(orca) {
   // 7. Listen to Orca Events
   orca.events.on('worktree.created', async (payload) => {
     orca.log(`[AutoPilot] Worktree created: ${payload?.worktreeId || 'new'} at ${payload?.path || ''}`)
+    if (payload?.path) {
+      const res = await setupWorktreeEnvironment(process.cwd(), payload.path)
+      if (res.copiedFiles && res.copiedFiles.length > 0) {
+        orca.log(`[AutoPilot] Synced environment files to worktree: ${res.copiedFiles.join(', ')}`)
+      }
+    }
   })
+
 
   orca.events.on('worktree.removed', async (payload) => {
     orca.log(`[AutoPilot] Worktree removed: ${payload?.worktreeId || ''}`)
