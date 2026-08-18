@@ -2055,6 +2055,10 @@ async function runPipeline(task) {
   persistTasks()
   renderBoard()
 
+  // Kích hoạt backend orchestrator tạo child worktree thật qua Orca CLI
+  callHost('autopilot.runPipeline', { issue: task, agentType: (task.assignee || 'claude') })
+
+
   setTimeout(function () {
     // Step 2: Tripartite Review
     task.column = 'review'
