@@ -1,6 +1,6 @@
 # 🐳 Hướng Dẫn Cấu Hình MiniMax-M3 & Dual-Profile Claude Code Trong Orca ADE
 
-Tài liệu này ghi lại toàn bộ quy trình thiết lập, cơ chế hoạt động và cẩm nang di chuyển (migration checklist / 1-click setup) sang máy mới cho hệ thống **Orca AutoPilot Plugin** chạy song song **Official Claude Code** và **MiniMax-M3**.
+Tài liệu này ghi lại toàn bộ quy trình thiết lập, cơ chế hoạt động và cẩm nang di chuyển (migration checklist / 1-click setup) sang máy mới cho hệ thống **Orca Native Multi-Agent Architecture** chạy song song **Official Claude Code**, **MiniMax-M3** và **Antigravity CLI**.
 
 ---
 
@@ -17,7 +17,7 @@ Script này tự động:
 2. Tạo cấu hình `~/.claude-ide/settings.json` (MiniMax-M3) với Gateway `https://aiapi.2tocom.space`, model `MiniMax-M3` và nạp skills Matt Pocock.
 3. Tự động thêm API Key vào `customApiKeyResponses.approved` (tránh lỗi 401 rejected key).
 4. Thiết lập Systemd User Environment `~/.config/environment.d/10-claude.conf`.
-5. Chạy unit tests và cài đặt plugin trực tiếp vào Orca ADE (`node scripts/install-orca-plugin.mjs .`).
+5. Đồng bộ bộ kỹ năng `/orca-orchestration` toàn cục vào `~/.agents/skills/`, `~/.claude/skills/`, `~/.claude-ide/skills/`.
 
 ---
 
