@@ -199,7 +199,7 @@ orca automations create \
   --name "AutoPilot Autonomous Issue Runner" \
   --trigger "*/3 * * * *" \
   --timezone "Asia/Ho_Chi_Minh" \
-  --precheck "gh issue list --repo minhdevtry/orca-plugin --state open --label needs-triage,ready-for-agent --json number -q '.[0].number'" \
+  --precheck "gh issue list --repo minhdevtry/orca-plugin --state open --label needs-triage,ready-for-agent --json number -q '.[0].number' | grep -q '^[0-9]'" \
   --prompt "Bạn là Lead Agent. Hãy kiểm tra các issue mới trên repo, bám sát AGENTS.md để khởi tạo run, mở worktree con, giao việc cho MiniMax/AGY và chạy đầy đủ quy trình 6 giai đoạn." \
   --provider claude \
   --repo minhdevtry/orca-plugin \
