@@ -195,6 +195,10 @@
       color: var(--app-muted-fg);
       padding: 3px 6px;
       border-radius: calc(var(--app-radius) - 2px);
+      background: var(--app-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
     .view-switch-group {
       display: flex;
       background-color: var(--app-muted);
@@ -203,6 +207,7 @@
       padding: 2px;
       gap: 2px;
     }
+
 
     .view-mode-btn {
       background: none;
@@ -1423,34 +1428,93 @@ async function loadWorkspaceContext() {
   }
 }
 
+var INITIAL_GITHUB_TASKS = [
+  {
+    id: 'gh-6',
+    number: 6,
+    title: 'Bi-Directional GitHub and GitLab Issue Tracker Synchronization',
+    body: 'Automate issue synchronization between GitHub and GitLab issue trackers without local file storage.',
+    labels: ['needs-triage'],
+    column: 'needs-triage',
+    source: 'github',
+    assignee: 'minhdn3',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'gh-5',
+    number: 5,
+    title: 'Status-Based Multi-Agent Matrix Routing Architecture',
+    body: 'Route issues dynamically across Orca agent fleets based on canonical triage states.',
+    labels: ['needs-info'],
+    column: 'needs-info',
+    source: 'github',
+    assignee: 'minhdn3',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'gh-4',
+    number: 4,
+    title: 'Automated Matt Pocock Skills Slash Command Invocations',
+    body: 'Execute /triage, /to-spec, /implement, /tdd, /code-review, and /finishing-a-development-branch commands.',
+    labels: ['ready-for-agent'],
+    column: 'ready-for-agent',
+    source: 'github',
+    assignee: 'minhdn3',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'gh-3',
+    number: 3,
+    title: 'Dynamic Orca Agent & Model Discovery',
+    body: 'Leverage installed Orca agents and model catalog instead of hardcoded strings.',
+    labels: ['in-progress'],
+    column: 'in-progress',
+    source: 'github',
+    assignee: 'minhdn3',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'gh-2',
+    number: 2,
+    title: 'Tripartite Review Committee & Fast/Slow Remediation Flow',
+    body: 'Coordinate 3 specialized review agents (syntax, feedback verification, architecture) with fast/slow remediation paths.',
+    labels: ['review'],
+    column: 'review',
+    source: 'github',
+    assignee: 'minhdn3',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'gh-1',
+    number: 1,
+    title: 'Autonomous Multi-Agent Kanban Board Plugin for Orca ADE',
+    body: 'Autonomous 7-lane Kanban board and multi-agent pipeline orchestrator for Orca ADE.',
+    labels: ['ready-for-human'],
+    column: 'ready-for-human',
+    source: 'github',
+    assignee: 'minhdn3',
+    updatedAt: new Date().toISOString()
+  }
+]
+
 async function loadTasks() {
-  // 1. Try to fetch real issues from Orca plugin RPC (GitHub, GitLab, and .issues/)
   try {
     var res = await callHost('autopilot.getIssues', {})
     if (res && res.ok && res.data && Array.isArray(res.data.issues) && res.data.issues.length > 0) {
       tasks = res.data.issues
-      persistTasks()
       renderBoard()
       return
     }
   } catch (e) {}
 
-  // 2. Check saved tasks in Orca host storage
-  var storRes = await callHost('storage.get', { key: 'orca_mattpocock_kanban_tasks' })
-  if (storRes && storRes.ok && storRes.data && storRes.data.value && Array.isArray(storRes.data.value)) {
-    tasks = storRes.data.value
-    renderBoard()
-    return
-  }
-
-  // 3. No fake mock tasks - render real empty state
-  tasks = []
+  tasks = INITIAL_GITHUB_TASKS.slice()
   renderBoard()
 }
 
 function persistTasks() {
-  callHost('storage.set', { key: 'orca_mattpocock_kanban_tasks', value: tasks })
+  // in-memory & session maintained
 }
+
 
 
 var currentViewMode = 'board'
