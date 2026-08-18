@@ -6,6 +6,8 @@ import { existsSync } from 'node:fs'
 import { sendNotification } from './notification-relay.mjs'
 import { updateIssueStatus, createPullRequest } from './github-gitlab-adapter.mjs'
 import { discoverInstalledOrcaAgents, resolveOptimalOrcaAgent, ORCA_CANONICAL_AGENTS } from './orca-agent-discovery.mjs'
+import { autoTrustClaudeWorktree, setupWorktreeEnvironment } from './worktree-setup.mjs'
+
 
 
 const execFileAsync = promisify(execFile)
@@ -354,6 +356,13 @@ export class PipelineOrchestrator {
           ['worktree', 'create', '--name', branchName, '--json'],
           { cwd: repoPath, timeout: 10000 }
         )
+
+        // Pre-trust child worktree path across Claude, MiniMax-M3, and Antigravity
+        const homeDir = process.env.HOME || ''
+        const worktreeDir = join(homeDir, 'orca', 'workspaces', 'orca-dhs', branchName.replace('/', '-'))
+        autoTrustClaudeWorktree(worktreeDir)
+        autoTrustClaudeWorktree(repoPath)
+
         // 2. Build agent launcher command dynamically
         let agentCmd = ''
         let agentTitle = `worker-${branchName}`

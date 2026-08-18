@@ -2,18 +2,23 @@ import { existsSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * Automatically pre-trusts a worktree path in ~/.claude.json and ~/.claude-ide/.claude.json
- * so Claude Code (standard and MiniMax-M3) never prompts for manual trust confirmation.
+ * Automatically pre-trusts a worktree path across all 3 agent platforms:
+ * 1. Official Claude (~/.claude.json, ~/.claude/.claude.json)
+ * 2. MiniMax-M3 (~/.claude-ide/.claude.json)
+ * 3. Google Antigravity CLI (~/.gemini/antigravity-cli/settings.json & jetski_state.pbtxt)
+ * so no agent ever prompts for manual trust confirmation or onboarding.
  */
 export function autoTrustClaudeWorktree(worktreePath) {
   const home = process.env.HOME || process.env.USERPROFILE || ''
   const configCandidates = [
     join(home, '.claude.json'),
+    join(home, '.claude', '.claude.json'),
     join(home, '.claude-ide', '.claude.json'),
     join(home, '.claude-ide', 'claude.json')
   ]
 
   let trusted = false
+  // 1. Pre-trust for Claude Code (Official & MiniMax-M3)
   for (const p of configCandidates) {
     try {
       if (existsSync(p)) {
@@ -46,8 +51,39 @@ export function autoTrustClaudeWorktree(worktreePath) {
     } catch (e) {}
   }
 
+  // 2. Pre-trust for Antigravity CLI (agy)
+  try {
+    const agySettingsPath = join(home, '.gemini', 'antigravity-cli', 'settings.json')
+    if (existsSync(agySettingsPath)) {
+      const raw = readFileSync(agySettingsPath, 'utf8')
+      const cfg = JSON.parse(raw)
+      cfg.hasAgreedToTerms = true
+      cfg.trustedWorkspaces = Array.from(new Set([
+        ...(cfg.trustedWorkspaces || []),
+        home,
+        join(home, 'Documents'),
+        join(home, 'Documents', 'orca-dhs'),
+        join(home, 'orca', 'workspaces'),
+        join(home, 'orca', 'workspaces', 'orca-dhs'),
+        worktreePath
+      ]))
+      writeFileSync(agySettingsPath, JSON.stringify(cfg, null, 2), 'utf8')
+      trusted = true
+    }
+
+    const agyPbtxtPath = join(home, '.gemini', 'antigravity-cli', 'jetski_state.pbtxt')
+    if (existsSync(agyPbtxtPath)) {
+      let content = readFileSync(agyPbtxtPath, 'utf8')
+      if (!content.includes('agent_onboarding_completed: AGENT_ONBOARDING_STATE_COMPLETED')) {
+        content += '\nagent_onboarding_completed: AGENT_ONBOARDING_STATE_COMPLETED\n'
+        writeFileSync(agyPbtxtPath, content, 'utf8')
+      }
+    }
+  } catch (err) {}
+
   return trusted
 }
+
 
 
 /**

@@ -118,9 +118,11 @@ systemctl --user import-environment ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROP
 
 ---
 
-### 3.4. Bỏ Qua Màn Hình Trust & Tự Động Phê Duyệt API Key
-Cấu trúc `customApiKeyResponses` trong cả `~/.claude.json` và `~/.claude-ide/.claude.json`:
+### 3.4. Cơ Chế Tự Động Phê Duyệt Trust (Universal Auto-Trust Cho Cả 3 Tác Tử)
+Để **Official Claude**, **MiniMax-M3**, và **Antigravity CLI (`agy`)** không bao giờ dừng lại hỏi `Do you trust this folder?`, `Do you agree to terms?`, hoặc `Do you want to use this custom API key?`:
 
+#### A. Đối với Claude Code (Official & MiniMax-M3):
+Ghi trạng thái `projects` và `customApiKeyResponses` vào `~/.claude.json` và `~/.claude-ide/.claude.json`:
 ```json
 {
   "customApiKeyResponses": {
@@ -131,13 +133,56 @@ Cấu trúc `customApiKeyResponses` trong cả `~/.claude.json` và `~/.claude-i
       "sk-b528wfjiiqv1qds1v2u9lh7b"
     ],
     "rejected": []
+  },
+  "projects": {
+    "/home/minhdn3/Documents/orca-dhs": {
+      "hasTrustDialogAccepted": true,
+      "hasCompletedProjectOnboarding": true
+    },
+    "/home/minhdn3/orca/workspaces/orca-dhs/agent-task-1": {
+      "hasTrustDialogAccepted": true,
+      "hasCompletedProjectOnboarding": true
+    }
   }
 }
 ```
 
-*(Plugin Orca AutoPilot tích hợp sẵn hàm `autoTrustClaudeWorktree` tự động ghi nhận các thông số này).*
+#### B. Đối với Antigravity CLI (`agy`):
+1. Ghi danh sách thư mục cha vào `~/.gemini/antigravity-cli/settings.json` (tự động thừa kế cho mọi child worktree bên trong):
+```json
+{
+  "enableTelemetry": false,
+  "hasAgreedToTerms": true,
+  "trustedWorkspaces": [
+    "/home/minhdn3",
+    "/home/minhdn3/Documents",
+    "/home/minhdn3/Documents/orca-dhs",
+    "/home/minhdn3/orca/workspaces",
+    "/home/minhdn3/orca/workspaces/orca-dhs"
+  ]
+}
+```
+2. Ghi cờ hoàn tất onboarding vào `~/.gemini/antigravity-cli/jetski_state.pbtxt`:
+```pbtxt
+post_onboarding:  {
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_MANAGER_WELCOME
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_USAGE_MODE
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_AGENT_CONFIGURATION
+  completed_steps:  POST_ONBOARDING_STEP_TYPE_ADD_WORKSPACE
+}
+seen_nuxs: {
+  uids: 31
+  uids: 29
+  uids: 24
+  uids: 23
+}
+agent_onboarding_completed: AGENT_ONBOARDING_STATE_COMPLETED
+```
+
+> ⚡ **Tự động hóa 100%**: Hàm `autoTrustClaudeWorktree(worktreePath)` trong [`orca-autopilot-plugin/lib/worktree-setup.mjs`](file:///home/minhdn3/Documents/orca-dhs/orca-autopilot-plugin/lib/worktree-setup.mjs) được gọi tự động mỗi khi tạo Child Worktree mới, tự động ghi trước các file cấu hình này trước khi Terminal PTY được mở ra!
 
 ---
+
 
 ## 4. 🚀 Lệnh Khởi Chạy Song Song 2 Tác Tử Trong Orca ADE
 
