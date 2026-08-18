@@ -142,5 +142,43 @@ if [ -d ".agents/skills/orca-orchestration" ]; then
   echo "✅ Đã đồng bộ bộ kỹ năng /orca-orchestration vào toàn bộ các thư mục cấu hình."
 fi
 
+# 7. Cài đặt Smart Launcher Wrapper (claude -> Official Claude Sonnet 5, claude-m3 -> MiniMax-M3)
+if [ -f "$USER_HOME/.local/bin/claude" ] && ! grep -q "claude-official-bin" "$USER_HOME/.local/bin/claude"; then
+  mv "$USER_HOME/.local/bin/claude" "$USER_HOME/.local/bin/claude-official-bin"
+fi
+
+cat << 'EOF' > "$USER_HOME/.local/bin/claude"
+#!/usr/bin/env bash
+# Official Claude Code Launcher (Sonnet 5 / Claude Team)
+# Strips custom gateway variables to guarantee Official Claude
+exec env -u ANTHROPIC_BASE_URL -u ANTHROPIC_API_KEY -u ANTHROPIC_MODEL -u ANTHROPIC_SMALL_FAST_MODEL -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_DISABLE_LOGIN_PROMPT -u CLAUDE_CODE_DONT_ASK_PERMISSIONS "$HOME/.local/bin/claude-official-bin" "$@"
+EOF
+chmod +x "$USER_HOME/.local/bin/claude"
+
+cat << 'EOF' > "$USER_HOME/.local/bin/claude-m3"
+#!/usr/bin/env bash
+# Dedicated launcher for MiniMax-M3 on custom Anthropic Gateway
+export ANTHROPIC_BASE_URL="https://aiapi.2tocom.space"
+export ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU"
+export ANTHROPIC_MODEL="MiniMax-M3"
+export ANTHROPIC_SMALL_FAST_MODEL="MiniMax-M3"
+export CLAUDE_CONFIG_DIR="$HOME/.claude-ide"
+
+exec "$HOME/.local/bin/claude-official-bin" --permission-mode bypassPermissions --dangerously-skip-permissions "$@"
+EOF
+chmod +x "$USER_HOME/.local/bin/claude-m3"
+
+# Đảm bảo ~/.profile nạp ~/.bashrc
+if [ -f "$USER_HOME/.profile" ] && ! grep -q "bashrc" "$USER_HOME/.profile"; then
+  cat << 'EOF' >> "$USER_HOME/.profile"
+
+# Source ~/.bashrc if it exists
+if [ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+  . "$HOME/.bashrc"
+fi
+EOF
+fi
+echo "✅ Đã cài đặt Smart Launchers (claude -> Official Claude, claude-m3 -> MiniMax-M3)"
+
 echo "🎉 [HOÀN TẤT] Môi trường Triple-Agent (Claude Official + MiniMax-M3 + Antigravity CLI) đã sẵn sàng 100%!"
 

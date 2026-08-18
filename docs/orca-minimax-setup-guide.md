@@ -16,8 +16,11 @@ Script này tự động:
 1. Tạo cấu hình `~/.claude/settings.json` (Official Claude) với chế độ **Bypass Permissions**.
 2. Tạo cấu hình `~/.claude-ide/settings.json` (MiniMax-M3) với Gateway `https://aiapi.2tocom.space`, model `MiniMax-M3` và nạp skills Matt Pocock.
 3. Tự động thêm API Key vào `customApiKeyResponses.approved` (tránh lỗi 401 rejected key).
-4. Thiết lập Systemd User Environment `~/.config/environment.d/10-claude.conf`.
+4. Thiết lập Systemd User Environment sạch (không gây rò rỉ biến MiniMax sang session người dùng).
 5. Đồng bộ bộ kỹ năng `/orca-orchestration` toàn cục vào `~/.agents/skills/`, `~/.claude/skills/`, `~/.claude-ide/skills/`.
+6. Cài đặt **Smart Launcher Shim**:
+   - `claude` ➔ Luôn luôn khởi chạy **Official Claude Code (Sonnet 5 / Claude Team)**.
+   - `claude-m3` ➔ Luôn luôn khởi chạy **MiniMax-M3** trên custom gateway.
 
 ---
 

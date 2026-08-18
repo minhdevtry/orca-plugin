@@ -36,8 +36,8 @@ Do NOT use when:
 
 | Role | Profile & Model | Primary Responsibilities | Canonical Launch Command |
 | :--- | :--- | :--- | :--- |
-| **Coordinator / Spec** | Claude Official (Sonnet 5) | Triage, Spec design, Gate supervision, PR release | `orca terminal create --worktree "<selector>" --title "Official Claude" --command "unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL CLAUDE_CONFIG_DIR && claude --permission-mode bypassPermissions --dangerously-skip-permissions" --focus --json` |
-| **Coder / TDD** | MiniMax-M3 (Custom Gateway) | High-throughput coding, Unit test TDD, Syntax review | `orca terminal create --worktree "<selector>" --title "MiniMax-M3" --command 'export ANTHROPIC_BASE_URL="https://aiapi.2tocom.space" && export ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU" && export ANTHROPIC_MODEL="MiniMax-M3" && export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && claude --permission-mode bypassPermissions --dangerously-skip-permissions' --focus --json` |
+| **Coordinator / Spec** | Claude Official (Sonnet 5) | Triage, Spec design, Gate supervision, PR release | `orca terminal create --worktree "<selector>" --title "Official Claude" --command "claude --permission-mode bypassPermissions --dangerously-skip-permissions" --focus --json` |
+| **Coder / TDD** | MiniMax-M3 (Custom Gateway) | High-throughput coding, Unit test TDD, Syntax review | `orca terminal create --worktree "<selector>" --title "MiniMax-M3" --command "claude-m3 --permission-mode bypassPermissions --dangerously-skip-permissions" --focus --json` |
 | **Architect / Research** | Antigravity CLI (`agy` Gemini 3.7 Flash) | Pro/Con technical research, `CONTEXT.md` architecture review | `orca terminal create --worktree "<selector>" --title "worker-agy" --command "agy --model gemini-3.7-flash-high --dangerously-skip-permissions" --focus --json` |
 
 ### 3-Tier Hierarchy Rules (Max Depth = 3)
