@@ -21,3 +21,7 @@ Single-context layout documented in `CONTEXT.md`. See `docs/agents/domain.md`.
 ### Orchestration skill
 Orca native multi-agent coordination protocol (`stablyai/orca`). Update via `npx -y skills update orchestration --global -y`. See `docs/adr/0001-autonomous-multi-agent-kanban-architecture.md`.
 
+### Plugin Development & Testing Guide
+Comprehensive rules for developing, testing, and debugging Orca ADE plugins without GNOME Screen Reader conflicts or CSP issues: see `docs/orca-plugin-development-and-testing-guide.md`.
+
+

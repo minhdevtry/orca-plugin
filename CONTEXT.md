@@ -51,6 +51,10 @@
 | **Crash Recovery** | The deterministic recovery protocol where interrupted in-flight tasks are reset to `ready-for-agent` upon Orca restart to prevent corrupted state resumption. |
 | **Worktree Cleanup** | Automated teardown (`orca worktree remove`) and local branch deletion triggered after a Pull Request is merged. |
 
+## Plugin Development & Testing Standards
+For comprehensive rules, safe binary resolver patterns (preventing GNOME Screen Reader conflicts on Linux), CSP sandboxing, and hot-reloading configurations, refer to [`docs/orca-plugin-development-and-testing-guide.md`](docs/orca-plugin-development-and-testing-guide.md).
+
+
 
 
 
