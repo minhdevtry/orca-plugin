@@ -62,6 +62,25 @@ export async function setupWorktreeEnvironment(mainRepoPath, worktreePath) {
     }
   }
 
+  // 3. Fallback: If .env doesn't exist, generate from active environment
+  const targetEnv = join(worktreePath, '.env')
+  if (!existsSync(targetEnv)) {
+    const envVars = []
+    if (process.env.ANTHROPIC_BASE_URL) envVars.push(`ANTHROPIC_BASE_URL="${process.env.ANTHROPIC_BASE_URL}"`)
+    if (process.env.ANTHROPIC_API_KEY) envVars.push(`ANTHROPIC_API_KEY="${process.env.ANTHROPIC_API_KEY}"`)
+    if (process.env.ANTHROPIC_MODEL) envVars.push(`ANTHROPIC_MODEL="${process.env.ANTHROPIC_MODEL}"`)
+    if (process.env.OPENAI_API_KEY) envVars.push(`OPENAI_API_KEY="${process.env.OPENAI_API_KEY}"`)
+    if (process.env.GEMINI_API_KEY) envVars.push(`GEMINI_API_KEY="${process.env.GEMINI_API_KEY}"`)
+    if (process.env.DEEPSEEK_API_KEY) envVars.push(`DEEPSEEK_API_KEY="${process.env.DEEPSEEK_API_KEY}"`)
+
+    if (envVars.length > 0) {
+      try {
+        writeFileSync(targetEnv, envVars.join('\n') + '\n', 'utf8')
+        copiedFiles.push('.env (generated)')
+      } catch (e) {}
+    }
+  }
+
   return {
     ok: true,
     copiedFiles,
@@ -69,4 +88,5 @@ export async function setupWorktreeEnvironment(mainRepoPath, worktreePath) {
     trusted: true
   }
 }
+
 
