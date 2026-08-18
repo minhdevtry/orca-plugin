@@ -48,7 +48,44 @@ export const AGENT_MATRIX = {
   }
 }
 
+export const MATT_POCOCK_SKILL_PROMPTS = {
+  triage: (issue) =>
+    `/triage #${issue.number || 'task'}: ${issue.title}\n\n` +
+    `Nhiệm vụ:\n` +
+    `1. Đọc nội dung issue, đối chiếu mã nguồn và CONTEXT.md.\n` +
+    `2. Kích hoạt 3 góc nhìn (Đồng thuận, Rủi ro, Đột phá) và chạy /to-spec để sinh spec.md.\n` +
+    `3. Xuất kết quả AGENT-BRIEF.md và chuyển sang ready-for-agent (hoặc needs-info nếu thiếu dữ kiện).`,
+
+  needsInfo: (issue) =>
+    `/research trên issue #${issue.number || 'task'}: ${issue.title}\n\n` +
+    `Nhiệm vụ:\n` +
+    `1. Điều tra 2 giả thuyết đối nghịch (Pro vs Con) để làm rõ điểm nghẽn.\n` +
+    `2. Ghi chú Triage Notes vào comment của issue và chuyển sang ready-for-agent khi đủ dữ kiện.`,
+
+  implement: (issue) =>
+    `/implement task #${issue.number || 'task'}: ${issue.title}\n\n` +
+    `Nhiệm vụ:\n` +
+    `1. Bám sát AGENT-BRIEF.md / spec.md và các tracer-bullet slices.\n` +
+    `2. Áp dụng /tdd tại các seams kỹ thuật.\n` +
+    `3. Chạy typecheck và test suite thường xuyên, tạo các commit nguyên tử (atomic commits).`,
+
+  review: (issue, targetBranch = 'main') =>
+    `/code-review since ${targetBranch}\n\n` +
+    `Hội đồng 3 Agent Review:\n` +
+    `1. MiniMax-M3: Quét syntax, lint, formatting, typos.\n` +
+    `2. Antigravity: Thẩm định và gạn lọc feedback chất lượng.\n` +
+    `3. Antigravity Arch: Soi kiến trúc, đối chiếu CONTEXT.md và kiểm tra xung đột module.`,
+
+  release: (issue) =>
+    `/finishing-a-development-branch\n\n` +
+    `Nhiệm vụ:\n` +
+    `1. Chạy full test suite và typecheck lần cuối.\n` +
+    `2. Áp dụng /resolving-merge-conflicts nếu có xung đột với main.\n` +
+    `3. Mở Pull Request kèm bản tóm tắt tự động.`
+}
+
 export const MAX_SELF_HEALING_ATTEMPTS = 3
+
 
 /**
  * Autonomous Pipeline State Tracker & Orchestrator
@@ -223,14 +260,15 @@ export class PipelineOrchestrator {
   async runCodeStage(runState, repoPath, agentType) {
     runState.stage = PIPELINE_STAGES.IN_PROGRESS
     const branchName = `agent/task-${runState.issue.number || Date.now()}`
-    this.log(runState, `[Stage 3: Coding] Tạo Git Worktree [${branchName}] qua Orca và chạy Coder Agent...`)
+    const prompt = MATT_POCOCK_SKILL_PROMPTS.implement(runState.issue)
+    this.log(runState, `[Stage 3: Coding] Tạo Git Worktree [${branchName}] qua Orca và chạy Coder Agent (${agentType}) với lệnh /implement...`)
 
     await updateIssueStatus(runState.issue, 'in-progress', repoPath)
 
     try {
       await execFileAsync(
         'orca',
-        ['worktree', 'create', '--name', branchName, '--agent', agentType, '--setup', 'run', '--json'],
+        ['worktree', 'create', '--name', branchName, '--agent', agentType, '--prompt', prompt, '--setup', 'run', '--json'],
         { cwd: repoPath, timeout: 2000 }
       )
       runState.worktree = branchName
@@ -240,6 +278,7 @@ export class PipelineOrchestrator {
       this.log(runState, `[Stage 3: Coding] Chạy Coder Agent trong worktree môi trường...`)
     }
   }
+
 
   /**
    * Stage 4: Tripartite Review Committee (MiniMax-M3 + Dual Antigravity)

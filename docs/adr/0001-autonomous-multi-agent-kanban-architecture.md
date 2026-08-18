@@ -89,7 +89,17 @@ Orca ADE provides an autonomous development environment with worktrees and termi
      - **Minor severity**: Coder Agent patches in-place in the Git Worktree and re-runs tests $\rightarrow$ proceeds directly to PR / Done.
      - **Major severity**: If under the review limit, adds a structured review comment to the issue and returns the card to `ready-for-agent` for full re-working; once the limit is reached, it patches best-effort and finalizes.
 
+22. **Automated Matt Pocock Slash Command Invocations**:
+   - In autonomous AFK mode, the orchestrator directly injects the exact, literal slash commands that human engineers use when driving `mattpocock/skills`:
+     - `needs-triage` $\rightarrow$ `/triage` + `/to-spec`
+     - `needs-info` $\rightarrow$ `/research` (Pro vs Con)
+     - `ready-for-agent` $\rightarrow$ `/implement` + `/tdd`
+     - `Review` $\rightarrow$ `/code-review`
+     - `Release` $\rightarrow$ `/finishing-a-development-branch` + `/resolving-merge-conflicts`
+   - This ensures full fidelity between manual execution and autonomous multi-agent fleet execution.
+
 ## Consequences
+
 
 
 - **Positive**:

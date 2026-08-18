@@ -342,3 +342,17 @@ Cấu hình chi tiết phân công Agent chính và mạng lưới Subagents chu
 - **Luồng Chậm (Slow-path — Lỗi lớn / cấu trúc `major`)**:
   - Nếu số lần review hiện tại `< $need_review_time`: Ghi chú nhận xét chi tiết vào comment của Issue, đổi tiêu đề `[Review Fix Needed] ...`, trả task về cột `ready-for-agent` để Coder Agent phân tích và làm lại bài bản.
   - Nếu đã chạm giới hạn `$need_review_time`: Coder Agent tự khắc phục tối đa, đảm bảo tests xanh và đẩy thẳng sang `ready-for-human`.
+
+---
+
+## 17. Tự Động Hóa Trọn Vẹn Các Lệnh Slash Command (`mattpocock/skills`)
+
+Khi dev làm thủ công, bạn phải gõ từng lệnh slash command vào terminal của Agent. Khi hệ thống chạy tự hành 100% (AFK Mode), Orchestrator sẽ **tự động gọi đúng các lệnh này thay thế bạn**:
+
+| Trạng thái Kanban | Lệnh Slash Command Tự Động Gọi | Hành Vi Chi Tiết Của Agent |
+| :--- | :--- | :--- |
+| **`needs-triage`** | `/triage` + `/to-spec` + `/to-tickets` | Đọc Issue, đối chiếu codebase & `CONTEXT.md`, spawn 3 subagents phân tích góc nhìn và sinh `AGENT-BRIEF.md` / `spec.md`. |
+| **`needs-info`** | `/research` (Pro vs Con) | Điều tra 2 giả thuyết đối nghịch, ghi chú `Triage Notes` vào Issue comment. |
+| **`ready-for-agent`** | `orca worktree create` + `/implement` + `/tdd` | Tạo Git Worktree độc lập, bám sát spec, áp dụng TDD tại các seams, chạy typecheck & tests liên tục, tạo atomic commits. |
+| **`Review Stage`** | `/code-review since main` | Hội đồng 3 Agent (MiniMax-M3 + Dual Antigravity) thẩm định chất lượng mã nguồn & kiến trúc. |
+| **`Release / PR`** | `/finishing-a-development-branch` + `/resolving-merge-conflicts` | Kiểm tra tests 100% xanh, tự động rebase và giải quyết xung đột với `main`, mở Pull Request. |
