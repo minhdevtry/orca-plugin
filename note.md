@@ -180,6 +180,14 @@ Sử dụng cơ chế Native của Orca ADE (`notifications.show`):
 | **12** | **Rào chắn chạy lặp (Guardrails)** | **Không giới hạn bước (No Arbitrary Limit)** | Để Agent chạy tự do hoàn thành bài toán. |
 | **13** | **Lưu vết & Báo cáo (Audit Trail)** | **Lưu JSONL (`.agents/logs/`) + Tóm tắt vào PR** | Ghi log JSONL chi tiết từng bước/tool-call để replay khi cần; tự động sinh bản tóm tắt thay đổi và kết quả test chèn vào mô tả Pull Request. |
 
+### 🔹 Vòng 4: Phục hồi Sự cố, Dọn dẹp & Môi trường Dev (Recovery, Cleanup & Dev UX)
+| STT | Trục Quyết định | Quyết định Thống nhất | Chi tiết Triển khai |
+| :--- | :--- | :--- | :--- |
+| **14** | **Phục hồi sau Crash (Crash Recovery)** | **Reset sạch về `ready-for-agent`** | Khi Orca khởi động lại sau crash, task đang chạy dở được đưa về `ready-for-agent` để chạy lại từ đầu nhằm đảm bảo tính toàn vẹn tuyệt đối. |
+| **15** | **Dọn dẹp Worktree (Worktree Cleanup)** | **Tự động xóa khi PR đã merge** | Sau khi PR được merge vào `main`, Plugin tự động gọi `orca worktree remove` và xóa nhánh local để giữ sidebar và ổ cứng sạch sẽ. |
+| **16** | **Hot-Reload phát triển Plugin** | **Auto-sync Watcher (`--watch`)** | Dùng `node scripts/install-orca-plugin.mjs --watch` tự động tính hash SHA-256 và cập nhật `plugins.lock.json` ngay khi sửa code. |
+
+
 ---
 
 ## 10. Khám Phá Chuyên Sâu Mã Nguồn Orca (Deep Codebase Findings)

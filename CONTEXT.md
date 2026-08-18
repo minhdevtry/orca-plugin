@@ -21,9 +21,22 @@
 - **`stablyai/orca` (`orchestration` skill)**: Native Orca orchestration protocol (`orca orchestration task-create`, `dispatch --inject`, `check --wait`, `worker_done`, `worker-release`). Updated via `npx -y skills update orchestration --global -y`.
 
 ### 3. Orca Host Integrations
-- **Git Worktree Lifecycle**: Handled by Orca (`src/main/git/worktree.ts`) via `orca worktree create`.
+- **Git Worktree Lifecycle**: Handled by Orca (`src/main/git/worktree.ts`) via `orca worktree create` and `orca worktree remove`.
 - **Realtime Event Bus**: Subscribed to `agent.status.changed` emitted by Orca `agentHookServer`.
 - **Dual Notification Relay**: Dispatched via `notifications.show` simultaneously to Desktop PC and paired **Orca Mobile** devices.
 - **In-IDE Diff Inspection**: Triggered via `orca file open-changed --mode diff`.
 - **Browser CDP Verification**: Native Chrome DevTools Protocol engine (`orca snapshot`, `orca click`, `orca eval`).
+
+## Domain Vocabulary & Glossary
+
+| Term | Definition |
+| :--- | :--- |
+| **Task** | A discrete work unit mapped from a GitHub/GitLab issue or local markdown ticket, managed across the 6 Kanban lanes. |
+| **Git Worktree** | An isolated file-tree and git branch managed natively by Orca ADE (`orca worktree create`) where an Agent codes and tests without interfering with the active workspace. |
+| **Stage (Triage State)** | One of the 6 canonical states: `needs-triage` $\rightarrow$ `needs-info` $\rightarrow$ `ready-for-agent` $\rightarrow$ `in-progress` $\rightarrow$ `ready-for-human` $\rightarrow$ `done`. |
+| **Self-Healing Loop** | An automated error recovery cycle ($\le 3$ retries) where the Coder Agent receives compiler/test/review failures and re-attempts implementation before alerting a human. |
+| **Dual Notification** | A unified alert emitted via `notifications.show` that triggers both a native Desktop banner and an instant push notification to paired **Orca Mobile** devices. |
+| **Crash Recovery** | The deterministic recovery protocol where interrupted in-flight tasks are reset to `ready-for-agent` upon Orca restart to prevent corrupted state resumption. |
+| **Worktree Cleanup** | Automated teardown (`orca worktree remove`) and local branch deletion triggered after a Pull Request is merged. |
+
 

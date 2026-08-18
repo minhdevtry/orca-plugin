@@ -63,13 +63,24 @@ Orca ADE provides an autonomous development environment with worktrees and termi
 16. **Orca Browser CDP & UI Verification**:
    - For frontend tasks, Reviewer/QA agents leverage Orca's built-in Chrome DevTools Protocol (CDP) accessibility snapshot engine (`orca snapshot`, `orca click`, `orca eval`) for end-to-end visual and functional verification.
 
+17. **Crash Recovery & Clean Reset Strategy**:
+   - Upon Orca restart or crash recovery, interrupted tasks in `in-progress` are cleanly reset to `ready-for-agent` to guarantee deterministic re-execution from scratch and avoid corrupted partial states.
+
+18. **Automated Worktree Cleanup on Merge**:
+   - Once a Pull Request is confirmed merged into `main`, the plugin automatically executes `orca worktree remove --name <task-worktree>` and deletes the local feature branch to preserve storage and keep the sidebar uncluttered.
+
+19. **Auto-Sync Hot Reloading during Development**:
+   - The plugin build pipeline supports `node scripts/install-orca-plugin.mjs --watch` to monitor file changes, recompute SHA-256 hashes, update `plugins.lock.json`, and trigger immediate live panel reloads inside Orca ADE.
+
 ## Consequences
 - **Positive**:
   - Pure lean architecture: Zero external runtime daemon required beyond Orca ADE.
   - Zero external dependency on third-party bots (Telegram/Discord).
   - Native look and feel matching Orca's dark/light design tokens and components.
   - Strict compliance with `mattpocock/skills` engineering workflow and Orca official orchestration protocol.
+  - Resilient restart behavior and automated disk/worktree cleanup.
 - **Negative**:
   - Full autonomy requires robust unit tests and sandboxed worktrees to prevent unconstrained agent loops.
+
 
 
