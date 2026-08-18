@@ -31,6 +31,16 @@ Orca ADE provides an autonomous development environment with worktrees and termi
 6. **Agent Engines**:
    - Default to Orca's active model (Claude Code / DeepSeek Harness DSH), with per-task override capability.
 
+7. **Worktree & Branch Lifecycle**:
+   - 100% delegate to Orca's native `orca worktree create --issue <id> --name <name> --agent <agent>` mechanism to preserve workspace tabs, integrated terminal multiplexing, and clean lifecycle management.
+
+8. **Native Review & Diff UX**:
+   - Leverage Orca's built-in Diff Viewer (`orca file open-changed --mode diff`) when inspecting tasks in `ready-for-human`.
+
+9. **Live Observation & Click-to-Focus**:
+   - Clicking an active task card in `in-progress` immediately focuses the corresponding Worktree and streaming terminal pane in Orca.
+
+
 ## Consequences
 - **Positive**:
   - Zero external dependency on third-party bots (Telegram/Discord).

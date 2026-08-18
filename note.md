@@ -165,8 +165,9 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 
 ## 9. Kết quả Phiên Phỏng vấn Kiến trúc (Grill-Me Decisions)
 
-Đã hoàn thành phiên phỏng vấn kiến trúc ngày 18/08/2026 với 5 quyết định cốt lõi:
+Đã hoàn thành các vòng phỏng vấn kiến trúc (Grill-Me) và chốt toàn bộ các quyết định thiết kế:
 
+### 🔹 Vòng 1: Kiến trúc Cốt lõi (Core Architecture)
 | STT | Trục Quyết định | Quyết định Thống nhất | Lý do & Khảo sát Thực tế từ Codebase Orca |
 | :--- | :--- | :--- | :--- |
 | **1** | **Nguồn nạp Task** | Tận dụng cơ chế Task & Workspace của Orca + `gh` / `glab` CLI | Orca đã tự nhận diện repository và remote của workspace hiện tại. Không cần viết lại module đọc task từ đầu. |
@@ -174,3 +175,11 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 | **3** | **Xử lý Lỗi / Kẹt** | **Vòng lặp tự sửa tối đa 3 lần (`Self-healing <= 3`)** | Agent tự sửa test/review tối đa 3 vòng. Nếu vẫn fail, tự dán nhãn `needs-info` hoặc `ready-for-human`, pause task và bắn notification báo động cho dev. |
 | **4** | **Động cơ Agent** | **Agent mặc định của Orca (Claude Code / DSH)**, hỗ trợ đổi per-task | Linh hoạt tận dụng các model mạnh nhất được cấu hình trong Orca. |
 | **5** | **Hệ thống Thông báo** | **Orca Native Desktop + Orca Mobile** (Không cần Webhook ngoài) | Soi mã nguồn `ref/orca/src/main/runtime/orca-runtime.ts` (L14202-L14224): Hàm `dispatchPluginNotification` (`notifications.show`) **tự động bắn notification sang cả Desktop và app Orca Mobile** qua QR Pairing. |
+
+### 🔹 Vòng 2: Trải nghiệm Tương tác & Vận hành Worktree (Worktree & Interaction UX)
+| STT | Trục Quyết định | Quyết định Thống nhất | Chi tiết Triển khai |
+| :--- | :--- | :--- | :--- |
+| **6** | **Quản lý Git Worktree** | **Theo chuẩn 100% của Orca Worktrees** | Tận dụng lệnh gốc `orca worktree create --issue <id> --name <name> --agent <agent>` để gắn kết trực tiếp vào sidebar và terminal của Orca. |
+| **7** | **Truyền ngữ cảnh (Handoff)** | **Orca Orchestration Prompt Bridge** | Chuyển tiếp Spec và checklist Tracer-bullets qua prompt khởi tạo của Coder Agent trong Worktree. |
+| **8** | **Trải nghiệm Review & Diff** | **Tận dụng Trình xem Diff tích hợp của Orca** | Bấm vào thẻ ở cột `ready-for-human` sẽ mở trực tiếp Diff Viewer (`orca file open-changed --mode diff`) của Orca. |
+| **9** | **Giám sát Agent thời gian thực** | **Click-to-Focus Live Worktree & Terminal** | Bấm vào bất kỳ thẻ nào đang chạy trong `in-progress` sẽ chuyển focus ngay lập tức sang tab Worktree và Terminal đang stream của Agent đó. |
