@@ -52,22 +52,39 @@ orca terminal create \
 
 ---
 
-### Bước 3: Giao Task Vào Terminal Của Subagent
-Từ JSON trả về của lệnh tạo terminal, lấy `result.terminal.handle` (ví dụ `term_xxx`):
+### Bước 3: Giao Task Kèm Cơ Chế Báo Cáo Ngược (Report-Back Protocol)
+Từ JSON trả về của lệnh tạo terminal, lấy `result.terminal.handle` của con (ví dụ `term_child`) và lấy handle của cha (ví dụ `term_parent` qua `orca terminal list --worktree active --json`):
+
 ```bash
 orca terminal send \
-  --terminal <handle> \
-  --text "Nhiệm vụ của bạn: /implement task #<id>. Hãy kiểm tra CONTEXT.md và viết unit tests /tdd." \
+  --terminal <childHandle> \
+  --text "Nhiệm vụ của bạn: /implement task #<id>. Hãy kiểm tra CONTEXT.md và viết unit tests /tdd. Khi hoàn thành toàn bộ, hãy chạy lệnh sau để báo cáo lại cho Parent Agent: orca terminal send --terminal <parentHandle> --text 'Subagent đã hoàn thành task #<id>. Đã chạy test và commit xong!' --enter --json" \
   --enter \
   --json
 ```
 
 ---
 
-### Bước 4: Kiểm Tra Tiến Độ Của Subagent
+### Bước 4: Kiểm Tra Tiến Độ & Đợi Kết Quả (Native Orca Wait)
+
+#### Cách 1: Đợi Tác Tử Con Hoàn Thành Natively (Non-blocking hoặc Blocking):
 ```bash
-orca terminal show --terminal <handle> --json
+# Chờ cho đến khi Subagent xong turn và quay về trạng thái idle:
+orca terminal wait --terminal <childHandle> --for tui-idle --timeout-ms 300000 --json
 ```
+
+#### Cách 2: Đọc Trực Tiếp Output Cuối Cùng Của Subagent:
+```bash
+# Đọc 50 dòng kết quả mới nhất của Subagent:
+orca terminal read --terminal <childHandle> --limit 50 --json
+```
+
+#### Cách 3: Mở Trình Soi Diff Của Worktree Con:
+```bash
+# Mở ngay Diff viewer của Worktree con để review:
+orca file open-changed --mode diff --worktree "name:agent/task-<id>" --json
+```
+
 
 ---
 
