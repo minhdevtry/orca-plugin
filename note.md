@@ -191,3 +191,29 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 | **11** | **Xử lý xung đột (Merge Conflicts)** | **Tự động kích hoạt `/resolving-merge-conflicts`** | Kết hợp phát hiện conflict từ `src/main/github/conflict-summary.ts` và tự động rebase `origin/main` qua skill `.agents/skills/resolving-merge-conflicts/`. |
 | **12** | **Rào chắn chạy lặp (Guardrails)** | **Không giới hạn bước (No Arbitrary Limit)** | Để Agent chạy tự do hoàn thành bài toán. |
 | **13** | **Lưu vết & Báo cáo (Audit Trail)** | **Lưu JSONL (`.agents/logs/`) + Tóm tắt vào PR** | Ghi log JSONL chi tiết từng bước/tool-call để replay khi cần; tự động sinh bản tóm tắt thay đổi và kết quả test chèn vào mô tả Pull Request. |
+
+---
+
+## 10. Khám Phá Chuyên Sâu Mã Nguồn Orca (Deep Codebase Findings)
+
+Qua rà soát chuyên sâu cây mã nguồn `ref/orca`, phát hiện 4 cơ chế thượng tầng có thể khai thác tối đa:
+
+### 1️⃣ Kiến trúc Song Hành: Sandboxed Panel + Out-of-Process Worker
+- **Sandboxed Panel (`panel/index.html`)**: Chạy trong iframe bảo mật, tự động nhận Design Tokens (`--background`, `--card`, `--primary`,...) từ Orca Host và gửi lệnh qua `window.parent.postMessage`.
+- **Out-of-Process Worker (`main.mjs`)**: Được quản lý bởi `PluginWorkerManager` (`src/main/plugins/plugin-worker-manager.ts`). Chạy ngầm trong tiến trình Node.js độc lập, duy trì điều phối pipeline 24/7 ngay cả khi người dùng đóng panel Kanban.
+
+### 2️⃣ Hệ Thống Bắt Sự Kiện Thời Gian Thực (Event Bus)
+Trong `src/main/index.ts` (L2870-L2883) và `src/shared/plugins/plugin-manifest.ts`, Orca cung cấp 3 domain events cốt lõi:
+- **`agent.status.changed`**: Bắn sự kiện thời gian thực khi trạng thái Agent chuyển đổi giữa `working`, `blocked`, `waiting`, `done`.
+  - $\rightarrow$ *Ứng dụng:* Khi Coder Agent kết thúc (`state: 'done'`), hệ thống tự động bốc sang Reviewer Agent (`/code-review`) mà không cần polling! Khi Agent cần hỏi (`waiting`/`blocked`), tự chuyển cột sang `needs-info`.
+- **`worktree.created` / `worktree.removed`**: Bắt sự kiện khi Worktree được cấp phát hoặc dọn dẹp.
+
+### 3️⃣ Danh mục Agent Phổ quát (Universal Agent Catalog)
+Trong `src/shared/agent-status-types.ts` (L21-L44), Orca đã chuẩn hóa sẵn giao thức nhận diện trạng thái cho hơn 20 loại Agent hàng đầu:
+`claude`, `codex`, `gemini`, `antigravity`, `pi`, `omp`, `opencode`, `cursor`, `grok`, `aider`, `devin`,...
+  - $\rightarrow$ *Ứng dụng:* Cho phép người dùng chuyển đổi linh hoạt bất kỳ Agent Engine nào cho từng task mà không cần viết custom parser.
+
+### 4️⃣ Cầu nối Thông Báo Kép (Desktop & Mobile Bridge)
+Trong `src/main/runtime/orca-runtime.ts` (L14202-L14224), phương thức `dispatchPluginNotification` (`notifications.show`) tự động kích hoạt cả:
+- Native OS Notification trên máy tính.
+- Web Relay đẩy trực tiếp sang ứng dụng di động **Orca Mobile** của người dùng.
