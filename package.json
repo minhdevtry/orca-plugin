@@ -1,0 +1,12 @@
+{
+  "name": "orca-dhs",
+  "version": "1.0.0",
+  "description": "Orca Native Multi-Agent Orchestration with Matt Pocock Skills",
+  "type": "module",
+  "scripts": {
+    "test": "node --test orca-autopilot-plugin/test/*.test.mjs"
+  },
+  "keywords": ["orca", "multi-agent", "skills", "mattpocock", "orchestration"],
+  "author": "minhdevtry",
+  "license": "MIT"
+}
