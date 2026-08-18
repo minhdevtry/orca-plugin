@@ -261,3 +261,34 @@ orca automations create \
 | **Chờ duyệt PR** | `ready-for-human` | `ready-for-human` | `/finishing-a-development-branch` | `orca worktree set --workspace-status ready-for-human` + `gh issue edit --add-label ready-for-human` |
 | **Hoàn thành** | (Closed) | `done` | `/handoff` | `orca worktree set --workspace-status Done` + `gh issue close <id>` |
 | **Từ chối** | `wontfix` | `wontfix` | — | `orca worktree set --workspace-status wontfix` + `gh issue close <id> --reason "not planned"` |
+
+---
+
+## 6. 🛡️ Hợp Đồng Phân Định Vai Trò & Chống Đẻ Nhánh Vô Hạn (Worker Contract & Anti-Recursion)
+
+Để tránh hiện tượng *"Hội chứng ai cũng muốn làm Sếp (Lead), không ai chịu làm Thợ (Worker)"* hoặc tác tử con tự ý đẻ thêm cháu chắt vô tận:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    QUY TẮC PHÂN BIỆT VAI TRÒ BẤT BIẾN                       │
+│                                                                             │
+│  1. LEAD COORDINATOR (Sếp):                                                 │
+│     • Điều kiện: Chạy ở thư mục gốc (`main`) hoặc do Orca Automation bật.  │
+│     • Quyền hạn: Mở Run, tạo Task, mở Worktree con, phân công & mở Gate.   │
+│                                                                             │
+│  2. LEAF WORKER (Thợ):                                                      │
+│     • Điều kiện: Chạy ở Worktree con (`agent/task-...`) hoặc nhận Dispatch. │
+│     • Trách nhiệm: TỰ TAY VIẾT CODE, TỰ SỬA FILE, TỰ CHẠY TEST TDD.        │
+│     • Điều cấm kỵ: 🚫 CẤM GỌI `worktree create` HAY ĐẺ THÊM AGENT CON!      │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 📜 Điều Khoản Bắt Buộc Dành Cho Worker (Subagent):
+1. **Cấm đẻ nhánh con**: Worker tuyệt đối **KHÔNG ĐƯỢC** gọi `orca worktree create`, `orca orchestration run-create`, hay `orca terminal create`.
+2. **Trực tiếp thực thi (Hands-on Execution)**: Nhiệm vụ `/implement` hay `/tdd` bắt buộc bạn phải dùng các công cụ chỉnh sửa file (`edit`, `write`) và chạy lệnh (`npm test`) trực tiếp trên codebase hiện tại.
+3. **Báo cáo và Dừng lại**: Khi hoàn thành hoặc thất bại, gửi tín hiệu `worker_done` đúng 1 lần:
+   ```bash
+   orca orchestration send --type worker_done --task-id <id> --dispatch-id <id> --outcome succeeded --subject "Đã hoàn thành" --body "Đã pass 100% unit tests" --json
+   ```
+   Sau đó **dừng lại ở dấu nhắc lệnh (idle)**, không tự ý nhận thêm việc hay khởi động tiến trình khác!
+
