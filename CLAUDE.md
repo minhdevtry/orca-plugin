@@ -264,31 +264,52 @@ orca automations create \
 
 ---
 
-## 6. 🛡️ Hợp Đồng Phân Định Vai Trò & Chống Đẻ Nhánh Vô Hạn (Worker Contract & Anti-Recursion)
+## 6. 🛡️ Cơ Chế Phân Cấp 3 Tầng Tối Đa (3-Tier Hierarchy & Hard Cap)
 
-Để tránh hiện tượng *"Hội chứng ai cũng muốn làm Sếp (Lead), không ai chịu làm Thợ (Worker)"* hoặc tác tử con tự ý đẻ thêm cháu chắt vô tận:
+Để vừa cho phép chia việc linh hoạt, vừa **chặn đứng nguy cơ đẻ con cháu chắt vô tận**, hệ thống quy định phân cấp chính xác **tối đa 3 tầng (Depth $\le$ 3)**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    QUY TẮC PHÂN BIỆT VAI TRÒ BẤT BIẾN                       │
+│                   HỆ THỐNG PHÂN CẤP 3 TẦNG (MAX DEPTH = 3)                  │
 │                                                                             │
-│  1. LEAD COORDINATOR (Sếp):                                                 │
-│     • Điều kiện: Chạy ở thư mục gốc (`main`) hoặc do Orca Automation bật.  │
-│     • Quyền hạn: Mở Run, tạo Task, mở Worktree con, phân công & mở Gate.   │
+│  👑 CẤP 1: LEAD COORDINATOR (Sếp Tổng):                                     │
+│     • Vị trí: Chạy ở thư mục gốc (`main`) hoặc do Orca Automation bật.      │
+│     • Quyền hạn: Mở Run, tạo Task, mở Worktree con, giao việc cho Cấp 2.    │
 │                                                                             │
-│  2. LEAF WORKER (Thợ):                                                      │
-│     • Điều kiện: Chạy ở Worktree con (`agent/task-...`) hoặc nhận Dispatch. │
-│     • Trách nhiệm: TỰ TAY VIẾT CODE, TỰ SỬA FILE, TỰ CHẠY TEST TDD.        │
-│     • Điều cấm kỵ: 🚫 CẤM GỌI `worktree create` HAY ĐẺ THÊM AGENT CON!      │
+│  🛠️ CẤP 2: FEATURE WORKER / MODULE LEAD (Thợ Chính):                        │
+│     • Vị trí: Chạy trong Worktree con (`agent/task-<id>`).                  │
+│     • Trách nhiệm: Chịu trách nhiệm chính về tính năng & chạy TDD.          │
+│     • Quyền hạn: ĐƯỢC PHÉP mở thêm TỐI ĐA 1 "Thằng Đệ" (Cấp 3) để trợ giúp!  │
+│                                                                             │
+│  ⚡ CẤP 3: LEAF HELPER (Thợ Phụ / Thằng Đệ — Chốt Chặn Cuối Cùng):          │
+│     • Vị trí: Được Cấp 2 mở trong cùng worktree (Split terminal hoặc tab).  │
+│     • Trách nhiệm: Làm đúng việc được giao (viết mock data, tra cứu doc).   │
+│     • 🚫 ĐIỀU CẤM KỴ: TUYỆT ĐỐI CẤM ĐẺ THÊM CẤP 4! Phải dừng lại khi xong!  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 📜 Điều Khoản Bắt Buộc Dành Cho Worker (Subagent):
-1. **Cấm đẻ nhánh con**: Worker tuyệt đối **KHÔNG ĐƯỢC** gọi `orca worktree create`, `orca orchestration run-create`, hay `orca terminal create`.
-2. **Trực tiếp thực thi (Hands-on Execution)**: Nhiệm vụ `/implement` hay `/tdd` bắt buộc bạn phải dùng các công cụ chỉnh sửa file (`edit`, `write`) và chạy lệnh (`npm test`) trực tiếp trên codebase hiện tại.
-3. **Báo cáo và Dừng lại**: Khi hoàn thành hoặc thất bại, gửi tín hiệu `worker_done` đúng 1 lần:
+---
+
+### 📜 Quy Tắc Vận Hành Giữa Thợ Chính (Cấp 2) & Thợ Phụ (Cấp 3):
+
+1. **Cách Thợ Chính (Cấp 2) gọi Thợ Phụ (Cấp 3)**:
+   Khi Thợ Chính (ví dụ `MiniMax-M3`) cần tra cứu kiến trúc hoặc viết mock test phức tạp, nó có thể mở thêm 1 terminal phụ trong chính worktree của nó:
    ```bash
-   orca orchestration send --type worker_done --task-id <id> --dispatch-id <id> --outcome succeeded --subject "Đã hoàn thành" --body "Đã pass 100% unit tests" --json
+   # Thợ Chính mở thêm 1 đệ Antigravity để nghiên cứu song song:
+   orca terminal create \
+     --worktree active \
+     --title "helper-agy" \
+     --command "agy --model gemini-3.7-flash-high --dangerously-skip-permissions" \
+     --json
    ```
-   Sau đó **dừng lại ở dấu nhắc lệnh (idle)**, không tự ý nhận thêm việc hay khởi động tiến trình khác!
+2. **Khóa Cứng Cho Thợ Phụ (Cấp 3 - Leaf Helper)**:
+   - Thợ Phụ (Cấp 3) chỉ nhận lệnh trực tiếp từ Thợ Chính (Cấp 2).
+   - Thợ Phụ **TUYỆT ĐỐI KHÔNG ĐƯỢC** gọi `orca worktree create`, `orca orchestration run-create`, hay mở thêm bất kỳ terminal nào khác.
+   - Khi làm xong, Thợ Phụ in kết quả ra và trở về trạng thái `idle` để Thợ Chính thu dọn:
+     ```bash
+     orca terminal close --terminal <helperHandle> --json
+     ```
+3. **Báo cáo về Sếp Tổng (Cấp 1)**:
+   Chỉ có **Thợ Chính (Cấp 2)** mới có quyền đại diện gửi báo cáo `worker_done` cuối cùng về cho Lead Coordinator (Cấp 1)!
+
 
