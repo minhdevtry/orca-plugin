@@ -1,0 +1,16 @@
+# Dependencies & Build
+node_modules/
+dist/
+out/
+.tmp/
+*.log
+
+# Reference repos & upstream sources
+ref/
+.ref/
+
+# OS & Environment
+.DS_Store
+Thumbs.db
+.env
+.env.local

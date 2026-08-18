@@ -1,0 +1,13 @@
+{
+  "name": "orca-autopilot",
+  "version": "1.0.0",
+  "description": "Autonomous Multi-Agent Kanban & Pipeline Engine for Orca ADE compatible with mattpocock/skills",
+  "type": "module",
+  "main": "main.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "keywords": ["orca", "plugin", "kanban", "agents", "mattpocock-skills", "autonomous"],
+  "author": "minhdn3",
+  "license": "MIT"
+}

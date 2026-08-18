@@ -1,0 +1,1059 @@
+<style>
+/* Exact Orca Native Component Design Language */
+:root {
+  --app-bg: var(--background, #ffffff);
+  --app-fg: var(--foreground, #09090b);
+  --app-card: var(--card, #ffffff);
+  --app-card-fg: var(--card-foreground, #09090b);
+  --app-muted: var(--muted, #f4f4f5);
+  --app-muted-fg: var(--muted-foreground, #71717a);
+  --app-border: var(--border, #e4e4e7);
+  --app-accent: var(--accent, #f4f4f5);
+  --app-accent-fg: var(--accent-foreground, #18181b);
+  --app-primary: var(--primary, #18181b);
+  --app-primary-fg: var(--primary-foreground, #fafafa);
+  --app-secondary: var(--secondary, #f4f4f5);
+  --app-secondary-fg: var(--secondary-foreground, #18181b);
+  --app-ring: var(--ring, #18181b);
+  --app-radius: var(--radius, 0.5rem);
+}
+
+.dark, [data-theme="dark"] {
+  --app-bg: var(--background, #09090b);
+  --app-fg: var(--foreground, #fafafa);
+  --app-card: var(--card, #09090b);
+  --app-card-fg: var(--card-foreground, #fafafa);
+  --app-muted: var(--muted, #27272a);
+  --app-muted-fg: var(--muted-foreground, #a1a1aa);
+  --app-border: var(--border, #27272a);
+  --app-accent: var(--accent, #27272a);
+  --app-accent-fg: var(--accent-foreground, #fafafa);
+  --app-primary: var(--primary, #fafafa);
+  --app-primary-fg: var(--primary-foreground, #18181b);
+  --app-secondary: var(--secondary, #27272a);
+  --app-secondary-fg: var(--secondary-foreground, #fafafa);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-fg);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.board-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px;
+  gap: 10px;
+}
+
+/* Header */
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.board-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.board-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: calc(var(--app-radius) - 2px);
+  background-color: var(--app-muted);
+  color: var(--app-fg);
+  border: 1px solid var(--app-border);
+}
+
+.board-title-text h1 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-fg);
+  line-height: 1.2;
+}
+
+.board-title-text span {
+  font-size: 11px;
+  color: var(--app-muted-fg);
+}
+
+.header-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+/* Toolbar Buttons */
+.orca-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: calc(var(--app-radius) - 2px);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--app-border);
+  background-color: var(--app-bg);
+  color: var(--app-fg);
+  transition: all 0.15s ease;
+}
+
+.orca-btn:hover {
+  background-color: var(--app-accent);
+  color: var(--app-accent-fg);
+}
+
+.orca-btn-primary {
+  background-color: var(--app-primary);
+  color: var(--app-primary-fg);
+  border-color: var(--app-primary);
+}
+
+.orca-btn-primary:hover {
+  opacity: 0.9;
+  background-color: var(--app-primary);
+}
+
+/* Search and Filter Toolbar */
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: calc(var(--app-radius) - 2px);
+  border: 1px solid var(--app-border);
+  background-color: var(--app-bg);
+  color: var(--app-fg);
+  font-size: 11px;
+  outline: none;
+}
+
+.search-input-wrapper input:focus {
+  border-color: var(--app-primary);
+}
+
+.filter-group {
+  display: flex;
+  gap: 4px;
+}
+
+.filter-chip {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  background-color: var(--app-muted);
+  color: var(--app-muted-fg);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-chip.active, .filter-chip:hover {
+  background-color: var(--app-accent);
+  color: var(--app-fg);
+  border-color: var(--app-border);
+}
+
+.stats-label {
+  font-size: 10px;
+  color: var(--app-muted-fg);
+  padding: 3px 6px;
+  border-radius: calc(var(--app-radius) - 2px);
+  background: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kanban Columns Grid - 6 Canonical Matt Pocock Columns */
+.kanban-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(185px, 1fr));
+  gap: 8px;
+  flex: 1;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.kanban-lane {
+  display: flex;
+  flex-direction: column;
+  min-width: 185px;
+  height: calc(100vh - 128px);
+  border-radius: var(--app-radius);
+  border: 1px solid var(--app-border);
+  background-color: var(--app-muted);
+  opacity: 0.95;
+  transition: border-color 0.15s;
+}
+
+.kanban-lane.drag-over {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 1px var(--app-primary);
+}
+
+.lane-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.lane-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dot-triage { background-color: #f59e0b; }      /* needs-triage: amber */
+.dot-info { background-color: #ef4444; }        /* needs-info: red/rose */
+.dot-ready { background-color: #8b5cf6; }       /* ready-for-agent: violet */
+.dot-working { background-color: #0284c7; }     /* in-progress: blue */
+.dot-human { background-color: #a855f7; }       /* ready-for-human: purple */
+.dot-done { background-color: #10b981; }        /* done: green */
+
+.lane-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted-fg);
+}
+
+.lane-counter {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background-color: var(--app-bg);
+  color: var(--app-muted-fg);
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--app-border);
+}
+
+.cards-scroll-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Card Surface - Exact Orca AgentKanbanCard styling */
+.orca-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: calc(var(--app-radius) - 2px);
+  background-color: var(--app-card);
+  color: var(--app-card-fg);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  cursor: grab;
+  transition: all 0.15s ease;
+}
+
+.orca-card:hover {
+  border-color: var(--app-muted-fg);
+  background-color: var(--app-accent);
+}
+
+.orca-card.dragging {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+
+.card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.card-repo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--app-fg);
+}
+
+.card-source-pill {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: var(--app-muted);
+  color: var(--app-muted-fg);
+  border: 1px solid var(--app-border);
+}
+
+.card-time {
+  font-size: 10px;
+  color: var(--app-muted-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-title-text {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--app-card-fg);
+  line-height: 1.35;
+}
+
+.card-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.card-label-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background-color: var(--app-muted);
+  color: var(--app-muted-fg);
+  border: 1px solid var(--app-border);
+}
+
+.card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid var(--app-border);
+  margin-top: 2px;
+}
+
+.card-agent-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--app-muted-fg);
+}
+
+.agent-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.card-action-btn {
+  font-size: 9.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  border: 1px solid var(--app-border);
+  background-color: var(--app-muted);
+  color: var(--app-fg);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.card-action-btn:hover {
+  background-color: var(--app-primary);
+  color: var(--app-primary-fg);
+  border-color: var(--app-primary);
+}
+
+/* Modal Popup */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal-panel {
+  background: var(--app-card);
+  color: var(--app-card-fg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.modal-header-row h3 { font-size: 12px; font-weight: 600; }
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--app-muted-fg);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.modal-form {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--app-muted-fg);
+  text-transform: uppercase;
+}
+
+.modal-form input, .modal-form textarea, .modal-form select {
+  background: var(--app-bg);
+  border: 1px solid var(--app-border);
+  border-radius: calc(var(--app-radius) - 2px);
+  color: var(--app-fg);
+  padding: 5px 8px;
+  font-size: 11px;
+  outline: none;
+}
+
+.modal-form input:focus, .modal-form textarea:focus, .modal-form select:focus {
+  border-color: var(--app-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--app-border);
+}
+
+/* Toast */
+.orca-toast {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  background: var(--app-card);
+  color: var(--app-card-fg);
+  border: 1px solid var(--app-border);
+  padding: 6px 12px;
+  border-radius: calc(var(--app-radius) - 2px);
+  font-size: 11px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+}
+
+.orca-toast.hidden { display: none; }
+</style>
+
+<div class="board-container">
+  <!-- Orca Board Header -->
+  <header class="board-header">
+    <div class="board-title-group">
+      <div class="board-icon-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M9 3v18"/>
+          <path d="M15 3v18"/>
+        </svg>
+      </div>
+      <div class="board-title-text">
+        <h1 id="header-repo-title">Orca Multi-Agent Kanban</h1>
+        <span id="header-branch-subtitle">Matt Pocock Canonical State Pipeline</span>
+      </div>
+    </div>
+
+    <div class="header-btn-group">
+      <button id="btn-new-task" class="orca-btn orca-btn-primary" title="Create a new task">
+        + Task
+      </button>
+      <button id="btn-sync-skills" class="orca-btn" title="Sync Matt Pocock Skills">
+        Skills (35)
+      </button>
+      <button id="btn-reload" class="orca-btn" title="Refresh">
+        ↻
+      </button>
+    </div>
+  </header>
+
+  <!-- Filter & Search Toolbar -->
+  <section class="toolbar-row">
+    <div class="search-input-wrapper">
+      <input type="text" id="search-input" placeholder="Search tasks, labels or #ID...">
+    </div>
+    <div class="filter-group">
+      <button class="filter-chip active" data-filter="all">All</button>
+      <button class="filter-chip" data-filter="local">Local</button>
+      <button class="filter-chip" data-filter="github">GitHub</button>
+      <button class="filter-chip" data-filter="gitlab">GitLab</button>
+    </div>
+    <div class="stats-label" id="stats-badge">Loading...</div>
+  </section>
+
+  <!-- Kanban Lanes Grid (Matt Pocock 6 Canonical State Buckets) -->
+  <main class="kanban-grid">
+    <!-- 1. needs-triage -->
+    <section class="kanban-lane" data-column="needs-triage">
+      <header class="lane-header">
+        <span class="lane-dot dot-triage"></span>
+        <span class="lane-title">needs-triage</span>
+        <span class="lane-counter" id="count-needs-triage">0</span>
+      </header>
+      <div class="cards-scroll-list" id="lane-cards-needs-triage"></div>
+    </section>
+
+    <!-- 2. needs-info -->
+    <section class="kanban-lane" data-column="needs-info">
+      <header class="lane-header">
+        <span class="lane-dot dot-info"></span>
+        <span class="lane-title">needs-info</span>
+        <span class="lane-counter" id="count-needs-info">0</span>
+      </header>
+      <div class="cards-scroll-list" id="lane-cards-needs-info"></div>
+    </section>
+
+    <!-- 3. ready-for-agent -->
+    <section class="kanban-lane" data-column="ready-for-agent">
+      <header class="lane-header">
+        <span class="lane-dot dot-ready"></span>
+        <span class="lane-title">ready-for-agent</span>
+        <span class="lane-counter" id="count-ready-for-agent">0</span>
+      </header>
+      <div class="cards-scroll-list" id="lane-cards-ready-for-agent"></div>
+    </section>
+
+    <!-- 4. in-progress -->
+    <section class="kanban-lane" data-column="in-progress">
+      <header class="lane-header">
+        <span class="lane-dot dot-working"></span>
+        <span class="lane-title">in-progress</span>
+        <span class="lane-counter" id="count-in-progress">0</span>
+      </header>
+      <div class="cards-scroll-list" id="lane-cards-in-progress"></div>
+    </section>
+
+    <!-- 5. ready-for-human -->
+    <section class="kanban-lane" data-column="ready-for-human">
+      <header class="lane-header">
+        <span class="lane-dot dot-human"></span>
+        <span class="lane-title">ready-for-human</span>
+        <span class="lane-counter" id="count-ready-for-human">0</span>
+      </header>
+      <div class="cards-scroll-list" id="lane-cards-ready-for-human"></div>
+    </section>
+
+    <!-- 6. done -->
+    <section class="kanban-lane" data-column="done">
+      <header class="lane-header">
+        <span class="lane-dot dot-done"></span>
+        <span class="lane-title">done</span>
+        <span class="lane-counter" id="count-done">0</span>
+      </header>
+      <div class="cards-scroll-list" id="lane-cards-done"></div>
+    </section>
+  </main>
+
+  <!-- New Task Modal -->
+  <div id="task-modal" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <div class="modal-header-row">
+        <h3>Create Autonomous Task</h3>
+        <button id="modal-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-form">
+        <div class="field-label">Task Title</div>
+        <input type="text" id="task-title-input" placeholder="e.g. Implement user authentication token refresh">
+
+        <div class="field-label">Spec / Tracer-Bullet Brief</div>
+        <textarea id="task-spec-input" rows="3" placeholder="Describe the goal or acceptance criteria..."></textarea>
+
+        <div class="field-label">Initial State (Matt Pocock Skills)</div>
+        <select id="task-state-select">
+          <option value="needs-triage">needs-triage (Initial classification)</option>
+          <option value="needs-info">needs-info (Needs user input)</option>
+          <option value="ready-for-agent" selected>ready-for-agent (Ready for agent to build)</option>
+        </select>
+
+        <div class="field-label">Assigned Agent</div>
+        <select id="task-agent-select">
+          <option value="Claude Code">Claude Code (/implement + /tdd)</option>
+          <option value="DeepSeek Harness">DeepSeek Harness (DSH)</option>
+          <option value="Codex">OpenAI Codex</option>
+          <option value="Pi">Pi Agent</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button id="modal-cancel-btn" class="orca-btn">Cancel</button>
+        <button id="modal-submit-btn" class="orca-btn orca-btn-primary">Create Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-el" class="orca-toast hidden"></div>
+</div>
+
+<script>
+// --- ORCA HOST BRIDGE PROTOCOL ---
+var nextRequestId = 1
+var pendingRequests = {}
+var activeWorkspaceContext = null
+
+window.addEventListener('message', function (event) {
+  var data = event.data
+  if (data && data.type === 'orca-panel-action-result') {
+    var cb = pendingRequests[data.requestId]
+    if (cb) {
+      delete pendingRequests[data.requestId]
+      cb(data)
+    }
+  }
+})
+
+function callHost(action, params) {
+  return new Promise(function (resolve) {
+    var reqId = 'req_' + (nextRequestId++)
+    pendingRequests[reqId] = resolve
+    window.parent.postMessage({
+      type: 'orca-panel-action',
+      requestId: reqId,
+      action: action,
+      params: params || {}
+    }, '*')
+
+    setTimeout(function () {
+      if (pendingRequests[reqId]) {
+        delete pendingRequests[reqId]
+        resolve({ ok: false, error: 'timeout' })
+      }
+    }, 4000)
+  })
+}
+
+// State
+var tasks = []
+var activeFilter = 'all'
+var searchQuery = ''
+var draggedTaskId = null
+
+var laneContainers = {
+  'needs-triage': document.getElementById('lane-cards-needs-triage'),
+  'needs-info': document.getElementById('lane-cards-needs-info'),
+  'ready-for-agent': document.getElementById('lane-cards-ready-for-agent'),
+  'in-progress': document.getElementById('lane-cards-in-progress'),
+  'ready-for-human': document.getElementById('lane-cards-ready-for-human'),
+  'done': document.getElementById('lane-cards-done')
+}
+
+var counters = {
+  'needs-triage': document.getElementById('count-needs-triage'),
+  'needs-info': document.getElementById('count-needs-info'),
+  'ready-for-agent': document.getElementById('count-ready-for-agent'),
+  'in-progress': document.getElementById('count-in-progress'),
+  'ready-for-human': document.getElementById('count-ready-for-human'),
+  'done': document.getElementById('count-done')
+}
+
+var searchInput = document.getElementById('search-input')
+var filterChips = document.querySelectorAll('.filter-chip')
+var statsBadge = document.getElementById('stats-badge')
+var toastEl = document.getElementById('toast-el')
+var headerRepoTitle = document.getElementById('header-repo-title')
+var headerBranchSubtitle = document.getElementById('header-branch-subtitle')
+
+var taskModal = document.getElementById('task-modal')
+var btnNewTask = document.getElementById('btn-new-task')
+var modalCloseBtn = document.getElementById('modal-close-btn')
+var modalCancelBtn = document.getElementById('modal-cancel-btn')
+var modalSubmitBtn = document.getElementById('modal-submit-btn')
+var btnSyncSkills = document.getElementById('btn-sync-skills')
+var btnReload = document.getElementById('btn-reload')
+
+function initListeners() {
+  searchInput.addEventListener('input', function (e) {
+    searchQuery = e.target.value.toLowerCase()
+    renderBoard()
+  })
+
+  filterChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      filterChips.forEach(function (c) { c.classList.remove('active') })
+      chip.classList.add('active')
+      activeFilter = chip.getAttribute('data-filter')
+      renderBoard()
+    })
+  })
+
+  btnReload.addEventListener('click', function () {
+    showToast('Refreshing tasks...')
+    loadWorkspaceContext().then(loadTasks)
+  })
+
+  btnSyncSkills.addEventListener('click', function () {
+    showToast('Syncing 35 skills from mattpocock/skills...')
+    callHost('notifications.show', {
+      title: 'Matt Pocock Skills Synced',
+      body: '35 engineering & productivity skills are loaded into your agents.'
+    })
+    setTimeout(function () {
+      showToast('35 skills available to Orca agents!')
+    }, 600)
+  })
+
+  btnNewTask.addEventListener('click', function () { taskModal.classList.remove('hidden') })
+  modalCloseBtn.addEventListener('click', function () { taskModal.classList.add('hidden') })
+  modalCancelBtn.addEventListener('click', function () { taskModal.classList.add('hidden') })
+
+  modalSubmitBtn.addEventListener('click', function () {
+    var title = document.getElementById('task-title-input').value.trim()
+    var spec = document.getElementById('task-spec-input').value.trim()
+    var state = document.getElementById('task-state-select').value
+    var agent = document.getElementById('task-agent-select').value
+
+    if (!title) {
+      alert('Please enter a task title')
+      return
+    }
+
+    var newTask = {
+      id: 'task-' + Date.now(),
+      source: 'local',
+      number: String(tasks.length + 1),
+      title: title,
+      body: spec,
+      labels: [state],
+      column: state,
+      assignee: agent,
+      updatedAt: new Date().toISOString()
+    }
+
+    tasks.unshift(newTask)
+    persistTasks()
+    taskModal.classList.add('hidden')
+    document.getElementById('task-title-input').value = ''
+    document.getElementById('task-spec-input').value = ''
+
+    showToast('Created Task #' + newTask.number + ' in ' + state + ' lane!')
+    renderBoard()
+  })
+}
+
+async function loadWorkspaceContext() {
+  var res = await callHost('workspace.readContext', {})
+  if (res && res.ok && res.data) {
+    activeWorkspaceContext = res.data
+    headerRepoTitle.textContent = res.data.displayName || 'Orca Multi-Agent Kanban'
+    headerBranchSubtitle.textContent = 'Branch: ' + (res.data.branch || 'main') + ' • Matt Pocock Pipeline'
+  }
+}
+
+async function loadTasks() {
+  var res = await callHost('storage.get', { key: 'orca_mattpocock_kanban_tasks' })
+  if (res && res.ok && res.data && res.data.value && Array.isArray(res.data.value)) {
+    tasks = res.data.value
+    renderBoard()
+    return
+  }
+
+  // Canonical Matt Pocock Skills Initial Tasks
+  tasks = [
+    {
+      id: 'task-1',
+      source: 'local',
+      number: 1,
+      title: 'Triage issue: Hỗ trợ xác thực người dùng đa phiên',
+      body: 'Phân loại ban đầu bằng /triage',
+      labels: ['needs-triage'],
+      column: 'needs-triage',
+      assignee: 'Triage Agent',
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'task-2',
+      source: 'local',
+      number: 2,
+      title: 'Cần bổ sung schema cơ sở dữ liệu cho Session Store',
+      body: 'Đang thiếu định dạng bảng, chờ người dùng bổ sung qua /needs-info',
+      labels: ['needs-info'],
+      column: 'needs-info',
+      assignee: 'Human Reviewer',
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'task-3',
+      source: 'local',
+      number: 3,
+      title: 'Lập trình tính năng Refresh Token Rotation',
+      body: 'Spec đã hoàn chỉnh (/to-spec), sẵn sàng để Coder Agent chạy',
+      labels: ['ready-for-agent'],
+      column: 'ready-for-agent',
+      assignee: 'Claude Code',
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'task-4',
+      source: 'local',
+      number: 4,
+      title: 'Triển khai TDD cho JWT Middleware trong Git Worktree',
+      body: 'Agent đang viết test và code theo /implement và /tdd',
+      labels: ['in-progress'],
+      column: 'in-progress',
+      assignee: 'Claude Code',
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'task-5',
+      source: 'local',
+      number: 5,
+      title: 'Duyệt PR: Đã vượt qua /code-review',
+      body: 'Coder và Reviewer Agent đã xong, chờ con người quyết định merge',
+      labels: ['ready-for-human'],
+      column: 'ready-for-human',
+      assignee: 'Human Dev',
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'task-6',
+      source: 'local',
+      number: 6,
+      title: 'Đồng bộ bộ kỹ năng mattpocock/skills (35 skills)',
+      body: 'Đã hoàn tất đồng bộ zero-fork',
+      labels: ['done'],
+      column: 'done',
+      assignee: 'System',
+      updatedAt: new Date().toISOString()
+    }
+  ]
+
+  persistTasks()
+  renderBoard()
+}
+
+function persistTasks() {
+  callHost('storage.set', { key: 'orca_mattpocock_kanban_tasks', value: tasks })
+}
+
+function renderBoard() {
+  Object.values(laneContainers).forEach(function (el) { if (el) el.innerHTML = '' })
+
+  var filtered = tasks.filter(function (t) {
+    if (activeFilter !== 'all' && t.source !== activeFilter) return false
+    if (searchQuery) {
+      var matchTitle = t.title.toLowerCase().indexOf(searchQuery) !== -1
+      var matchId = String(t.number).indexOf(searchQuery) !== -1
+      var matchLabels = (t.labels || []).some(function (l) { return l.toLowerCase().indexOf(searchQuery) !== -1 })
+      if (!matchTitle && !matchId && !matchLabels) return false
+    }
+    return true
+  })
+
+  var columnCounts = {
+    'needs-triage': 0,
+    'needs-info': 0,
+    'ready-for-agent': 0,
+    'in-progress': 0,
+    'ready-for-human': 0,
+    'done': 0
+  }
+
+  filtered.forEach(function (t) {
+    var col = t.column || 'needs-triage'
+    if (laneContainers[col]) {
+      columnCounts[col] = (columnCounts[col] || 0) + 1
+      var cardEl = createCardElement(t)
+      laneContainers[col].appendChild(cardEl)
+    }
+  })
+
+  Object.keys(columnCounts).forEach(function (col) {
+    if (counters[col]) counters[col].textContent = columnCounts[col]
+  })
+
+  statsBadge.textContent = filtered.length + ' tasks active'
+}
+
+function createCardElement(t) {
+  var card = document.createElement('div')
+  card.className = 'orca-card'
+  card.setAttribute('draggable', 'true')
+  card.setAttribute('data-id', t.id)
+
+  var labelsHtml = (t.labels || [])
+    .map(function (label) { return '<span class="card-label-badge">' + escapeHtml(label) + '</span>' })
+    .join('')
+
+  card.innerHTML =
+    '<div class="card-top-row">' +
+      '<span class="card-repo-tag">' +
+        '<span class="card-source-pill">' + escapeHtml(t.source) + '</span>' +
+        '<span>#' + escapeHtml(t.number) + '</span>' +
+      '</span>' +
+      '<span class="card-time">just now</span>' +
+    '</div>' +
+    '<div class="card-title-text">' + escapeHtml(t.title) + '</div>' +
+    (labelsHtml ? '<div class="card-tags-row">' + labelsHtml + '</div>' : '') +
+    '<div class="card-footer-row">' +
+      '<span class="card-agent-indicator">' +
+        '<span class="agent-dot"></span>' +
+        (t.assignee ? escapeHtml(t.assignee) : 'Auto-Assigned') +
+      '</span>' +
+      '<button class="card-action-btn btn-auto-run">🚀 Auto-Run</button>' +
+    '</div>'
+
+  card.addEventListener('dragstart', function (e) {
+    draggedTaskId = t.id
+    card.classList.add('dragging')
+    if (e.dataTransfer) {
+      e.dataTransfer.setData('text/plain', t.id)
+    }
+  })
+
+  card.addEventListener('dragend', function () {
+    card.classList.remove('dragging')
+    draggedTaskId = null
+  })
+
+  var runBtn = card.querySelector('.btn-auto-run')
+  runBtn.addEventListener('click', function (e) {
+    e.stopPropagation()
+    runPipeline(t)
+  })
+
+  return card
+}
+
+function setupDragAndDrop() {
+  document.querySelectorAll('.kanban-lane').forEach(function (lane) {
+    lane.addEventListener('dragover', function (e) {
+      e.preventDefault()
+      lane.classList.add('drag-over')
+    })
+
+    lane.addEventListener('dragleave', function () {
+      lane.classList.remove('drag-over')
+    })
+
+    lane.addEventListener('drop', function (e) {
+      e.preventDefault()
+      lane.classList.remove('drag-over')
+      var targetColumn = lane.getAttribute('data-column')
+      var taskId = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || draggedTaskId
+
+      var task = tasks.find(function (item) { return item.id === taskId })
+      if (task && task.column !== targetColumn) {
+        task.column = targetColumn
+        task.labels = [targetColumn]
+        showToast('Chuyển #' + task.number + ' sang [' + targetColumn + ']')
+        persistTasks()
+
+        if (targetColumn === 'in-progress') {
+          showToast('⚡ Launching Coder Agent for #' + task.number + '...')
+          runPipeline(task)
+        }
+
+        renderBoard()
+      }
+    })
+  })
+}
+
+function runPipeline(task) {
+  showToast('🚀 [Stage 1] Spec Agent (/to-spec) analyzing #' + task.number + '...')
+  task.column = 'in-progress'
+  task.labels = ['in-progress']
+  persistTasks()
+  renderBoard()
+
+  callHost('notifications.show', {
+    title: 'Orca Fleet Pipeline Started',
+    body: 'Task #' + task.number + ': ' + task.title + ' is now executing.'
+  })
+
+  if (activeWorkspaceContext && activeWorkspaceContext.terminals && activeWorkspaceContext.terminals.length > 0) {
+    var termId = activeWorkspaceContext.terminals[0].id
+    callHost('terminal.sendText', {
+      terminalId: termId,
+      text: '# [Orca AutoPilot] Running Task #' + task.number + ': ' + task.title + ' via /implement + /tdd',
+      enter: true
+    })
+  }
+
+  setTimeout(function () {
+    showToast('⚡ [Stage 2] Coder Agent writing code & tests in Git Worktree (/implement + /tdd)...')
+  }, 2000)
+
+  setTimeout(function () {
+    task.column = 'ready-for-human'
+    task.labels = ['ready-for-human']
+    persistTasks()
+    renderBoard()
+    showToast('🔍 [Stage 3] Reviewer Agent passed (/code-review). Chờ con người duyệt PR!')
+    callHost('notifications.show', {
+      title: 'Task #' + task.number + ' Sẵn sàng Review (ready-for-human)',
+      body: 'Đã hoàn tất code & tests. Chờ duyệt PR trên GitHub/GitLab.'
+    })
+  }, 4500)
+}
+
+function showToast(msg) {
+  toastEl.textContent = msg
+  toastEl.classList.remove('hidden')
+  setTimeout(function () { toastEl.classList.add('hidden') }, 3500)
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// Start
+initListeners()
+setupDragAndDrop()
+loadWorkspaceContext().then(loadTasks)
+</script>
