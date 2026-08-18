@@ -176,7 +176,12 @@ export async function installPlugin(sourceDir, pluginsDir = join(process.env.HOM
 // CLI execution
 const args = process.argv.slice(2)
 const isWatch = args.includes('--watch') || args.includes('-w')
-const targetPath = resolve(args.find(a => !a.startsWith('-')) || process.cwd())
+let rawTargetPath = resolve(args.find(a => !a.startsWith('-')) || process.cwd())
+if (!existsSync(join(rawTargetPath, 'orca-plugin.json')) && existsSync(join(rawTargetPath, 'orca-autopilot-plugin', 'orca-plugin.json'))) {
+  rawTargetPath = join(rawTargetPath, 'orca-autopilot-plugin')
+}
+const targetPath = rawTargetPath
+
 
 async function main() {
   await installPlugin(targetPath)

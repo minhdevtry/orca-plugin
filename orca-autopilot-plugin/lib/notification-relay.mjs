@@ -28,13 +28,16 @@ export async function sendNotification({
     }
   }
 
-  // 2. Linux OS Native Notification (notify-send)
-  try {
-    const urgency = level === 'error' ? 'critical' : level === 'warning' ? 'normal' : 'low'
-    await execFileAsync('notify-send', ['-u', urgency, fullTitle, body])
-  } catch (e) {
-    // Non-fatal if notify-send is not installed
+  // 2. Linux OS Native Notification (notify-send) - skip in tests to prevent popup flashes
+  if (process.env.NODE_ENV !== 'test' && !process.env.CI) {
+    try {
+      const urgency = level === 'error' ? 'critical' : level === 'warning' ? 'normal' : 'low'
+      await execFileAsync('notify-send', ['-u', urgency, fullTitle, body])
+    } catch (e) {
+      // Non-fatal if notify-send is not installed
+    }
   }
+
 
   // 3. Webhook (Telegram / Discord / NTFY / Slack) if configured
   if (webhookUrl) {
