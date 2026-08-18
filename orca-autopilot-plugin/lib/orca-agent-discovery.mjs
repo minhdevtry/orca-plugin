@@ -1,150 +1,147 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
 
 /**
- * Orca Canonical Agent Definitions (sourced directly from Orca's TUI_AGENT_CONFIG & WellKnownAgentType)
+ * Probes Claude CLI dynamically using Orca's control request protocol
  */
-export const ORCA_CANONICAL_AGENTS = {
-  claude: {
-    id: 'claude',
-    label: 'Claude Code (Orca Native)',
-    detectCmd: 'claude',
-    defaultModel: 'claude-3-7-sonnet-20250219',
-    models: ['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022']
-  },
-  antigravity: {
-    id: 'antigravity',
-    label: 'Google Antigravity (AGY)',
-    detectCmd: 'agy',
-    aliases: ['antigravity'],
-    defaultModel: 'gemini-2.5-flash-thinking',
-    models: ['gemini-2.5-flash-thinking', 'gemini-2.5-pro', 'gemini-2.5-flash']
-  },
-  gemini: {
-    id: 'gemini',
-    label: 'Google Gemini CLI',
-    detectCmd: 'gemini',
-    defaultModel: 'gemini-2.5-flash-thinking',
-    models: ['gemini-2.5-flash-thinking', 'gemini-2.5-flash', 'gemini-2.5-pro']
-  },
-  codex: {
-    id: 'codex',
-    label: 'OpenAI Codex CLI',
-    detectCmd: 'codex',
-    defaultModel: 'o3-mini',
-    models: ['o3-mini', 'o1', 'gpt-4o', 'gpt-4.5-preview']
-  },
-  opencode: {
-    id: 'opencode',
-    label: 'OpenCode Agent',
-    detectCmd: 'opencode',
-    defaultModel: 'deepseek-coder-v2',
-    models: ['deepseek-coder-v2', 'deepseek-chat', 'llama-3.3-70b']
-  },
-  pi: {
-    id: 'pi',
-    label: 'Pi Agent CLI',
-    detectCmd: 'pi',
-    defaultModel: 'pi-default',
-    models: ['pi-default']
-  },
-  grok: {
-    id: 'grok',
-    label: 'Grok CLI Agent',
-    detectCmd: 'grok',
-    defaultModel: 'grok-2',
-    models: ['grok-2', 'grok-beta']
-  },
-  minimax: {
-    id: 'minimax',
-    label: 'MiniMax Agent',
-    detectCmd: 'minimax',
-    aliases: ['mimo-code'],
-    defaultModel: 'minimax-m3',
-    models: ['minimax-m3', 'minimax-abab6.5']
-  }
+export async function probeClaudeModels() {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn('claude', ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose'], {
+        timeout: 3000
+      })
+
+      let stdout = ''
+      child.stdout.on('data', (data) => {
+        stdout += data.toString()
+      })
+
+      child.on('error', () => {
+        resolve([])
+      })
+
+      child.on('close', () => {
+        const models = []
+        for (const line of stdout.split(/\r?\n/)) {
+          if (line.includes('control_response') && line.includes('models')) {
+            try {
+              const parsed = JSON.parse(line)
+              const rawModels = parsed?.response?.response?.models || []
+              for (const m of rawModels) {
+                if (m?.value && m.value !== 'default') {
+                  models.push({ id: m.value, label: m.displayName || m.value, description: m.description })
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+        resolve(models)
+      })
+
+      const stdinPayload = JSON.stringify({
+        type: 'control_request',
+        request_id: 'orca-model-discovery',
+        request: { subtype: 'list_models' }
+      }) + '\n'
+
+      child.stdin.write(stdinPayload)
+      child.stdin.end()
+    } catch (e) {
+      resolve([])
+    }
+  })
 }
 
 /**
- * Checks if a command binary is present on PATH
+ * Orca Canonical Agents Definition
  */
-async function checkCommandInstalled(cmd) {
-  try {
-    await execFileAsync('which', [cmd], { timeout: 1500 })
-    return true
-  } catch (e) {
-    return false
-  }
-}
+export const ORCA_CANONICAL_AGENTS = [
+  { id: 'claude', cmd: 'claude', label: 'Claude Code (Orca Native)', envModelKey: 'ANTHROPIC_MODEL' },
+  { id: 'antigravity', cmd: 'agy', aliases: ['antigravity'], label: 'Google Antigravity (AGY)', envModelKey: 'GEMINI_MODEL' },
+  { id: 'gemini', cmd: 'gemini', label: 'Google Gemini CLI', envModelKey: 'GEMINI_MODEL' },
+  { id: 'codex', cmd: 'codex', label: 'OpenAI Codex CLI', envModelKey: 'OPENAI_MODEL' },
+  { id: 'opencode', cmd: 'opencode', label: 'OpenCode Agent', envModelKey: 'OPENCODE_MODEL' },
+  { id: 'pi', cmd: 'pi', label: 'Pi Agent CLI', envModelKey: 'PI_MODEL' },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI Agent', envModelKey: 'GROK_MODEL' },
+  { id: 'minimax', cmd: 'minimax', aliases: ['mimo-code'], label: 'MiniMax Agent', envModelKey: 'MINIMAX_MODEL' }
+]
 
 /**
- * Discovers which of Orca's canonical agents are actually installed and detected on this machine.
- * Parallels Orca's useDetectedAgents hook.
+ * Dynamically discovers which agent CLIs are physically installed on PATH
  */
 export async function discoverInstalledOrcaAgents() {
-  const discovered = []
+  const agents = ORCA_CANONICAL_AGENTS
+  const detected = []
 
-  for (const [key, meta] of Object.entries(ORCA_CANONICAL_AGENTS)) {
-    const isInstalled = await checkCommandInstalled(meta.detectCmd)
-    let aliasInstalled = false
-    if (!isInstalled && meta.aliases) {
-      for (const alias of meta.aliases) {
-        if (await checkCommandInstalled(alias)) {
-          aliasInstalled = true
-          break
+
+  for (const agent of agents) {
+    let installed = false
+    let version = ''
+
+    try {
+      const res = await execFileAsync('which', [agent.cmd], { timeout: 1500 })
+      installed = Boolean(res.stdout.trim())
+    } catch (e) {
+      if (agent.aliases) {
+        for (const alias of agent.aliases) {
+          try {
+            const aliasRes = await execFileAsync('which', [alias], { timeout: 1500 })
+            if (aliasRes.stdout.trim()) {
+              installed = true
+              break
+            }
+          } catch (err) {
+            // continue
+          }
         }
       }
     }
 
-    discovered.push({
-      id: meta.id,
-      label: meta.label,
-      detectCmd: meta.detectCmd,
-      defaultModel: meta.defaultModel,
-      models: meta.models,
-      installed: isInstalled || aliasInstalled
+    let dynamicModels = []
+    if (installed && agent.id === 'claude') {
+      dynamicModels = await probeClaudeModels()
+    }
+
+    const envModel = process.env[agent.envModelKey] || null
+
+    detected.push({
+      id: agent.id,
+      label: agent.label,
+      cmd: agent.cmd,
+      installed,
+      envModel,
+      discoveredModels: dynamicModels.map(m => m.id)
     })
   }
 
-  return discovered
+  return detected
 }
 
 /**
- * Resolves optimal detected agent and model for a given stage
+ * Resolves optimal detected agent and model dynamically without hardcoding
  */
 export async function resolveOptimalOrcaAgent(stage, userPreference = null) {
   const detected = await discoverInstalledOrcaAgents()
-  const installedMap = new Map(detected.filter(d => d.installed).map(d => [d.id, d]))
+  const installed = detected.filter(d => d.installed)
 
-  if (userPreference && installedMap.has(userPreference.agent)) {
-    const agentMeta = installedMap.get(userPreference.agent)
+  if (userPreference && userPreference.agent) {
     return {
-      agent: agentMeta.id,
-      model: userPreference.model || agentMeta.defaultModel
+      agent: userPreference.agent,
+      model: userPreference.model || process.env[userPreference.agent.toUpperCase() + '_MODEL'] || 'default'
     }
   }
 
-  // Smart fallback based on what Orca has detected installed
-  if (installedMap.has('claude')) {
-    return { agent: 'claude', model: ORCA_CANONICAL_AGENTS.claude.defaultModel }
-  }
-  if (installedMap.has('antigravity')) {
-    return { agent: 'antigravity', model: ORCA_CANONICAL_AGENTS.antigravity.defaultModel }
-  }
-  if (installedMap.has('gemini')) {
-    return { agent: 'gemini', model: ORCA_CANONICAL_AGENTS.gemini.defaultModel }
-  }
-  if (installedMap.has('codex')) {
-    return { agent: 'codex', model: ORCA_CANONICAL_AGENTS.codex.defaultModel }
+  if (installed.length > 0) {
+    const primary = installed[0]
+    return {
+      agent: primary.id,
+      model: primary.envModel || primary.discoveredModels[0] || 'default'
+    }
   }
 
-  // Default to first detected or fallback
-  const firstInstalled = detected.find(d => d.installed)
-  if (firstInstalled) {
-    return { agent: firstInstalled.id, model: firstInstalled.defaultModel }
-  }
-
-  return { agent: 'claude', model: 'claude-3-7-sonnet-20250219' }
+  return { agent: 'claude', model: 'default' }
 }

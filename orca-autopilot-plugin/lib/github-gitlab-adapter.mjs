@@ -14,7 +14,8 @@ export const STATUS_LABELS = {
   NEEDS_INFO: ['needs-info'],
   READY_FOR_AGENT: ['ready-for-agent'],
   IN_PROGRESS: ['in-progress', 'status:in-progress', 'working'],
-  READY_FOR_HUMAN: ['ready-for-human', 'in-review', 'status:in-review'],
+  REVIEW: ['review', 'in-review', 'status:review', 'tripartite-review'],
+  READY_FOR_HUMAN: ['ready-for-human', 'status:ready-for-human'],
   DONE: ['done', 'closed', 'status:done']
 }
 
@@ -24,20 +25,24 @@ export const ALL_STATUS_LABELS = [
   'ready-for-agent',
   'in-progress',
   'status:in-progress',
-  'ready-for-human',
+  'review',
   'in-review',
-  'status:in-review',
+  'status:review',
+  'ready-for-human',
   'done',
   'status:done',
   'wontfix'
 ]
 
 /**
- * Map issue labels to 6-lane Kanban Column
+ * Map issue labels to 7-lane Kanban Column
  */
 export function determineKanbanColumn(labels = []) {
   const normalizedLabels = labels.map(l => (typeof l === 'string' ? l : l.name || '').toLowerCase())
 
+  if (normalizedLabels.some(l => STATUS_LABELS.REVIEW.includes(l))) {
+    return 'review'
+  }
   if (normalizedLabels.some(l => STATUS_LABELS.IN_PROGRESS.includes(l))) {
     return 'in-progress'
   }
@@ -55,6 +60,7 @@ export function determineKanbanColumn(labels = []) {
   }
   return 'needs-triage'
 }
+
 
 
 /**

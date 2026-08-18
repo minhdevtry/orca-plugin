@@ -4,29 +4,33 @@ import { determineKanbanColumn, STATUS_LABELS } from '../lib/github-gitlab-adapt
 import { PipelineOrchestrator, PIPELINE_STAGES, AGENT_MATRIX, MAX_SELF_HEALING_ATTEMPTS, loadAutopilotConfig } from '../lib/pipeline-orchestrator.mjs'
 
 
-test('determineKanbanColumn maps Matt Pocock labels directly to 6 canonical lanes', () => {
+test('determineKanbanColumn maps Matt Pocock labels directly to 7 canonical lanes', () => {
   // 1. in-progress
   assert.equal(determineKanbanColumn(['in-progress']), 'in-progress')
   assert.equal(determineKanbanColumn(['status:in-progress', 'backend']), 'in-progress')
 
-  // 2. ready-for-agent
+  // 2. review (Tripartite Review)
+  assert.equal(determineKanbanColumn(['review']), 'review')
+  assert.equal(determineKanbanColumn(['tripartite-review']), 'review')
+
+  // 3. ready-for-agent
   assert.equal(determineKanbanColumn(['ready-for-agent']), 'ready-for-agent')
 
-  // 3. ready-for-human
-  assert.equal(determineKanbanColumn(['in-review']), 'ready-for-human')
+  // 4. ready-for-human
   assert.equal(determineKanbanColumn(['ready-for-human']), 'ready-for-human')
 
-  // 4. needs-info
+  // 5. needs-info
   assert.equal(determineKanbanColumn(['needs-info']), 'needs-info')
 
-  // 5. done
+  // 6. done
   assert.equal(determineKanbanColumn(['done']), 'done')
   assert.equal(determineKanbanColumn(['closed']), 'done')
 
-  // 6. needs-triage (default / unknown)
+  // 7. needs-triage (default / unknown)
   assert.equal(determineKanbanColumn(['needs-triage']), 'needs-triage')
   assert.equal(determineKanbanColumn(['unknown-label']), 'needs-triage')
 })
+
 
 test('PipelineOrchestrator initializes with 6 stages, Tripartite Review Committee and matrix', () => {
   const orchestrator = new PipelineOrchestrator()
