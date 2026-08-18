@@ -2015,24 +2015,38 @@ async function runPipeline(task) {
     body: task.title + ' (Assigned to ' + (task.assignee || 'Claude') + ')'
   })
 
+  // Xây dựng nội dung nhiệm vụ chuẩn Matt Pocock Skills
+  var taskDirective = task.column === 'needs-triage' ? '/triage (Đọc issue, đối chiếu CONTEXT.md và sinh spec)' :
+                      task.column === 'needs-info' ? '/research (Điều tra làm rõ yêu cầu kỹ thuật)' :
+                      task.column === 'ready-for-agent' || task.column === 'in-progress' ? '/implement (Thực thi code test-first theo /tdd)' :
+                      '/code-review (Chạy Hội đồng 3 Agent Review)'
+
   // Thử tương tác trực tiếp với tab Terminal đang mở trong Orca ADE
   try {
     var ctxRes = await callHost('workspace.readContext', {})
     var activeTermId = ctxRes && ctxRes.data && ctxRes.data.terminals && ctxRes.data.terminals[0] ? ctxRes.data.terminals[0].id : null
     if (activeTermId) {
-      var terminalCmd = 'echo "🚀 [Orca AutoPilot] Đang chạy Pipeline cho Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '" && echo "  -> Lead Agent: ' + (task.assignee || 'Claude Code') + '" && echo "  -> Worktree: ' + (task.worktree || 'agent/task-' + task.number) + '" && git status --short\n'
+      var terminalCmd = 'echo "================================================================="\n' +
+        'echo "🚀 [Orca AutoPilot] GIAO VIỆC: Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '"\n' +
+        'echo "  📋 Mô tả: ' + (task.body || task.title).replace(/"/g, '\\"').replace(/\n/g, ' ') + '"\n' +
+        'echo "  🎯 Chỉ thị kỹ năng: ' + taskDirective + '"\n' +
+        'echo "  🤖 Tác tử phụ trách: ' + (task.assignee || 'Claude Code') + '"\n' +
+        'echo "================================================================="\n' +
+        'git status --short\n'
+
       await callHost('terminal.sendText', {
         terminalId: activeTermId,
         text: terminalCmd,
         enter: true
       })
-      appendTaskLog(task, '⚡ [Terminal] Đã kích hoạt lệnh thực thi trực tiếp vào Orca Terminal tab [' + activeTermId + ']')
+      appendTaskLog(task, '⚡ [Terminal] Đã nạp chỉ thị [' + taskDirective + '] vào Terminal tab [' + activeTermId + ']')
     } else {
       appendTaskLog(task, 'ℹ️ [Terminal] Đang chạy quy trình nền trong Worktree...')
     }
   } catch (err) {
     appendTaskLog(task, '⚠️ [Terminal] ' + (err && err.message ? err.message : err))
   }
+
 
   // Step 1: Coding & Worktree
   task.column = 'in-progress'
