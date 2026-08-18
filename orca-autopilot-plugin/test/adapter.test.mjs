@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { determineKanbanColumn, STATUS_LABELS } from '../lib/github-gitlab-adapter.mjs'
-import { PipelineOrchestrator, PIPELINE_STAGES, AGENT_MATRIX, MAX_SELF_HEALING_ATTEMPTS } from '../lib/pipeline-orchestrator.mjs'
+import { PipelineOrchestrator, PIPELINE_STAGES, AGENT_MATRIX, MAX_SELF_HEALING_ATTEMPTS, loadAutopilotConfig } from '../lib/pipeline-orchestrator.mjs'
+
 
 test('determineKanbanColumn maps Matt Pocock labels directly to 6 canonical lanes', () => {
   // 1. in-progress
@@ -113,3 +114,27 @@ test('PipelineOrchestrator executes task pipeline and transitions to ready-for-h
   assert.equal(result.runState.attempt, 1)
   assert.ok(result.runState.worktree.includes('agent/task-101'))
 })
+
+test('loadAutopilotConfig dynamically reads .agents/config/autopilot.json without hardcoding', async () => {
+  const rootDir = '/home/minhdn3/Documents/orca-dhs'
+  const config = await loadAutopilotConfig(rootDir)
+  assert.ok(config.sourcePath.includes('autopilot.json'))
+  assert.equal(config.needReviewTime, 1)
+  assert.equal(config.agentMatrix['needs-triage'].agent, 'claude')
+  assert.equal(config.agentMatrix['needs-info'].agent, 'antigravity')
+})
+
+test('discoverInstalledOrcaAgents leverages Orca canonical catalog and PATH detection', async () => {
+  const { discoverInstalledOrcaAgents, resolveOptimalOrcaAgent, ORCA_CANONICAL_AGENTS } = await import('../lib/orca-agent-discovery.mjs')
+  const detected = await discoverInstalledOrcaAgents()
+  assert.ok(Array.isArray(detected))
+  assert.ok(detected.length >= 5)
+  assert.ok(detected.some(d => d.id === 'claude'))
+  assert.ok(detected.some(d => d.id === 'antigravity'))
+
+  const optimal = await resolveOptimalOrcaAgent('in-progress')
+  assert.ok(optimal.agent)
+  assert.ok(optimal.model)
+})
+
+

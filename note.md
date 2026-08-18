@@ -356,3 +356,21 @@ Khi dev làm thủ công, bạn phải gõ từng lệnh slash command vào term
 | **`ready-for-agent`** | `orca worktree create` + `/implement` + `/tdd` | Tạo Git Worktree độc lập, bám sát spec, áp dụng TDD tại các seams, chạy typecheck & tests liên tục, tạo atomic commits. |
 | **`Review Stage`** | `/code-review since main` | Hội đồng 3 Agent (MiniMax-M3 + Dual Antigravity) thẩm định chất lượng mã nguồn & kiến trúc. |
 | **`Release / PR`** | `/finishing-a-development-branch` + `/resolving-merge-conflicts` | Kiểm tra tests 100% xanh, tự động rebase và giải quyết xung đột với `main`, mở Pull Request. |
+
+---
+
+## 18. Hệ Thống Cấu Hình Tự Do 2 Tầng (Zero-Code Customization)
+
+Không hardcode bất kỳ model, agent hay prompt nào trong mã nguồn:
+
+### 📁 Tầng 1: File Cấu hình Repository (`.agents/config/autopilot.json`)
+- File JSON khai báo rõ ràng, cho phép thay đổi:
+  - `agentMatrix`: Model và Agent cho từng làn (`needs-triage`, `needs-info`, `in-progress`, `review`).
+  - `review.committee`: Danh sách các agent tham gia thẩm định diff.
+  - `need_review_time`: Giới hạn số lần review tối đa.
+  - `prompts`: Kịch bản lệnh slash command cho từng bước.
+
+### 🖥️ Tầng 2: Cửa sổ Cài đặt Trực quan trên Kanban (Settings Modal)
+- Nút **"⚙️ Config"** trên header bảng Kanban:
+  - Mở form tùy biến Model, số lần Review và prompt.
+  - Bấm **Save** $\rightarrow$ lưu ngay vào Orca Host Storage (`storage.set('autopilot_config')`) và có hiệu lực tức thì mà không cần reload app!

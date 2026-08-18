@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "need_review_time": 1,
+  "max_self_healing_attempts": 3,
+  "agentMatrix": {
+    "needs-triage": {
+      "agent": "claude",
+      "model": "claude-3-7-sonnet-20250219",
+      "subagents": ["perspective-consensus", "perspective-risk", "perspective-breakthrough"],
+      "role": "Triage & Spec Formulation"
+    },
+    "needs-info": {
+      "agent": "antigravity",
+      "model": "gemini-2.5-flash-thinking",
+      "subagents": ["hypothesis-pro", "hypothesis-con"],
+      "role": "Deep Information Gathering & Hypothesis Debate"
+    },
+    "in-progress": {
+      "agent": "claude",
+      "model": "claude-3-7-sonnet-20250219",
+      "subagents": {
+        "research": "gemini-2.5-flash",
+        "bulk": "minimax-m3",
+        "logic": "claude-3-7-sonnet-20250219"
+      },
+      "role": "Lead Coder & TDD Implementer"
+    },
+    "review": {
+      "committee": [
+        {
+          "id": "code-reviewer",
+          "agent": "minimax",
+          "model": "minimax-m3",
+          "role": "Syntax, Lint & Code Review"
+        },
+        {
+          "id": "review-verifier",
+          "agent": "antigravity",
+          "model": "gemini-2.5-flash-thinking",
+          "role": "Feedback Verification & Filtering"
+        },
+        {
+          "id": "arch-reviewer",
+          "agent": "antigravity",
+          "model": "gemini-2.5-flash-thinking",
+          "role": "Architecture & CONTEXT.md Non-conflict Review"
+        }
+      ],
+      "defaultNeedReviewTime": 1
+    }
+  },
+  "prompts": {
+    "triage": "/triage #{number}: {title}\n\nNhiệm vụ:\n1. Đọc nội dung issue, đối chiếu mã nguồn và CONTEXT.md.\n2. Kích hoạt 3 góc nhìn (Đồng thuận, Rủi ro, Đột phá) và chạy /to-spec để sinh spec.md.\n3. Xuất kết quả AGENT-BRIEF.md và chuyển sang ready-for-agent (hoặc needs-info nếu thiếu dữ kiện).",
+    "needsInfo": "/research trên issue #{number}: {title}\n\nNhiệm vụ:\n1. Điều tra 2 giả thuyết đối nghịch (Pro vs Con) để làm rõ điểm nghẽn.\n2. Ghi chú Triage Notes vào comment của issue và chuyển sang ready-for-agent khi đủ dữ kiện.",
+    "implement": "/implement task #{number}: {title}\n\nNhiệm vụ:\n1. Bám sát AGENT-BRIEF.md / spec.md và các tracer-bullet slices.\n2. Áp dụng /tdd tại các seams kỹ thuật.\n3. Chạy typecheck và test suite thường xuyên, tạo các commit nguyên tử (atomic commits).",
+    "review": "/code-review since main\n\nHội đồng 3 Agent Review:\n1. MiniMax-M3: Quét syntax, lint, formatting, typos.\n2. Antigravity: Thẩm định và gạn lọc feedback chất lượng.\n3. Antigravity Arch: Soi kiến trúc, đối chiếu CONTEXT.md và kiểm tra xung đột module.",
+    "release": "/finishing-a-development-branch\n\nNhiệm vụ:\n1. Chạy full test suite và typecheck lần cuối.\n2. Áp dụng /resolving-merge-conflicts nếu có xung đột với main.\n3. Mở Pull Request kèm bản tóm tắt tự động."
+  }
+}

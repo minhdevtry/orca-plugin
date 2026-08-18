@@ -510,6 +510,9 @@ body {
       <button id="btn-new-task" class="orca-btn orca-btn-primary" title="Create a new task">
         + Task
       </button>
+      <button id="btn-config" class="orca-btn" title="Configure Fleet & Models">
+        ⚙️ Config
+      </button>
       <button id="btn-sync-skills" class="orca-btn" title="Sync Matt Pocock Skills">
         Skills (35)
       </button>
@@ -517,6 +520,7 @@ body {
         ↻
       </button>
     </div>
+
   </header>
 
   <!-- Filter & Search Toolbar -->
@@ -617,12 +621,16 @@ body {
           <option value="ready-for-agent" selected>ready-for-agent (Ready for agent to build)</option>
         </select>
 
-        <div class="field-label">Assigned Agent</div>
+        <div class="field-label">Assigned Agent (Orca Universal Catalog)</div>
         <select id="task-agent-select">
-          <option value="Claude Code">Claude Code (/implement + /tdd)</option>
-          <option value="DeepSeek Harness">DeepSeek Harness (DSH)</option>
-          <option value="Codex">OpenAI Codex</option>
-          <option value="Pi">Pi Agent</option>
+          <option value="claude" selected>Claude Code (`claude` - Orca Native)</option>
+          <option value="antigravity">Google Antigravity (`agy` / `antigravity`)</option>
+          <option value="gemini">Google Gemini CLI (`gemini`)</option>
+          <option value="codex">OpenAI Codex (`codex`)</option>
+          <option value="opencode">OpenCode Agent (`opencode`)</option>
+          <option value="pi">Pi Agent (`pi`)</option>
+          <option value="dsh">DeepSeek Harness (`dsh`)</option>
+          <option value="grok">Grok CLI (`grok`)</option>
         </select>
       </div>
       <div class="modal-actions">
@@ -632,9 +640,69 @@ body {
     </div>
   </div>
 
+  <!-- Fleet Config Modal -->
+  <div id="config-modal" class="modal-overlay hidden">
+    <div class="modal-panel" style="max-width: 500px;">
+      <div class="modal-header-row">
+        <h3>⚙️ Orca Fleet Agent & Model Configuration</h3>
+        <button id="config-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-form">
+        <div class="field-label">Triage Agent & Model (needs-triage)</div>
+        <div style="display:flex;gap:6px;">
+          <select id="cfg-triage-agent" style="width:140px;">
+            <option value="claude" selected>claude</option>
+            <option value="antigravity">antigravity</option>
+            <option value="gemini">gemini</option>
+            <option value="codex">codex</option>
+            <option value="dsh">dsh</option>
+          </select>
+          <input type="text" id="cfg-triage-model" value="claude-3-7-sonnet-20250219" placeholder="Model ID" style="flex:1;">
+        </div>
+
+        <div class="field-label">Information Gathering Agent (needs-info)</div>
+        <div style="display:flex;gap:6px;">
+          <select id="cfg-info-agent" style="width:140px;">
+            <option value="antigravity" selected>antigravity</option>
+            <option value="gemini">gemini</option>
+            <option value="claude">claude</option>
+            <option value="codex">codex</option>
+          </select>
+          <input type="text" id="cfg-info-model" value="gemini-2.5-flash-thinking" placeholder="Model ID" style="flex:1;">
+        </div>
+
+        <div class="field-label">Lead Coder Agent (in-progress)</div>
+        <div style="display:flex;gap:6px;">
+          <select id="cfg-code-agent" style="width:140px;">
+            <option value="claude" selected>claude</option>
+            <option value="codex">codex</option>
+            <option value="opencode">opencode</option>
+            <option value="dsh">dsh</option>
+          </select>
+          <input type="text" id="cfg-code-model" value="claude-3-7-sonnet-20250219" placeholder="Model ID" style="flex:1;">
+        </div>
+
+        <div class="field-label">Research Subagent Model (Orca Provider)</div>
+        <input type="text" id="cfg-research-model" value="gemini-2.5-flash" placeholder="e.g. gemini-2.5-flash">
+
+        <div class="field-label">Bulk Token / Boilerplate Subagent Model</div>
+        <input type="text" id="cfg-bulk-model" value="minimax-m3" placeholder="e.g. minimax-m3, deepseek-chat">
+
+        <div class="field-label">Max Review Rounds ($need_review_time)</div>
+        <input type="number" id="cfg-review-rounds" value="1" min="1" max="5">
+      </div>
+      <div class="modal-actions">
+        <button id="config-cancel-btn" class="orca-btn">Cancel</button>
+        <button id="config-save-btn" class="orca-btn orca-btn-primary">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Toast -->
   <div id="toast-el" class="orca-toast hidden"></div>
 </div>
+
 
 <script>
 // --- ORCA HOST BRIDGE PROTOCOL ---
@@ -709,6 +777,13 @@ var btnNewTask = document.getElementById('btn-new-task')
 var modalCloseBtn = document.getElementById('modal-close-btn')
 var modalCancelBtn = document.getElementById('modal-cancel-btn')
 var modalSubmitBtn = document.getElementById('modal-submit-btn')
+
+var configModal = document.getElementById('config-modal')
+var btnConfig = document.getElementById('btn-config')
+var configCloseBtn = document.getElementById('config-close-btn')
+var configCancelBtn = document.getElementById('config-cancel-btn')
+var configSaveBtn = document.getElementById('config-save-btn')
+
 var btnSyncSkills = document.getElementById('btn-sync-skills')
 var btnReload = document.getElementById('btn-reload')
 
@@ -747,6 +822,17 @@ function initListeners() {
   modalCloseBtn.addEventListener('click', function () { taskModal.classList.add('hidden') })
   modalCancelBtn.addEventListener('click', function () { taskModal.classList.add('hidden') })
 
+  btnConfig.addEventListener('click', function () {
+    loadFleetConfig()
+    configModal.classList.remove('hidden')
+  })
+  configCloseBtn.addEventListener('click', function () { configModal.classList.add('hidden') })
+  configCancelBtn.addEventListener('click', function () { configModal.classList.add('hidden') })
+
+  configSaveBtn.addEventListener('click', function () {
+    saveFleetConfig()
+  })
+
   modalSubmitBtn.addEventListener('click', function () {
     var title = document.getElementById('task-title-input').value.trim()
     var spec = document.getElementById('task-spec-input').value.trim()
@@ -780,6 +866,42 @@ function initListeners() {
     renderBoard()
   })
 }
+
+async function loadFleetConfig() {
+  var res = await callHost('storage.get', { key: 'autopilot_config' })
+  if (res && res.ok && res.data && res.data.value) {
+    var cfg = res.data.value
+    if (cfg.triageAgent) document.getElementById('cfg-triage-agent').value = cfg.triageAgent
+    if (cfg.triageModel) document.getElementById('cfg-triage-model').value = cfg.triageModel
+    if (cfg.infoAgent) document.getElementById('cfg-info-agent').value = cfg.infoAgent
+    if (cfg.infoModel) document.getElementById('cfg-info-model').value = cfg.infoModel
+    if (cfg.codeAgent) document.getElementById('cfg-code-agent').value = cfg.codeAgent
+    if (cfg.codeModel) document.getElementById('cfg-code-model').value = cfg.codeModel
+    if (cfg.researchModel) document.getElementById('cfg-research-model').value = cfg.researchModel
+    if (cfg.bulkModel) document.getElementById('cfg-bulk-model').value = cfg.bulkModel
+    if (cfg.needReviewTime) document.getElementById('cfg-review-rounds').value = cfg.needReviewTime
+  }
+}
+
+async function saveFleetConfig() {
+  var cfg = {
+    triageAgent: document.getElementById('cfg-triage-agent').value,
+    triageModel: document.getElementById('cfg-triage-model').value.trim(),
+    infoAgent: document.getElementById('cfg-info-agent').value,
+    infoModel: document.getElementById('cfg-info-model').value.trim(),
+    codeAgent: document.getElementById('cfg-code-agent').value,
+    codeModel: document.getElementById('cfg-code-model').value.trim(),
+    researchModel: document.getElementById('cfg-research-model').value.trim(),
+    bulkModel: document.getElementById('cfg-bulk-model').value.trim(),
+    needReviewTime: parseInt(document.getElementById('cfg-review-rounds').value, 10) || 1
+  }
+
+  await callHost('storage.set', { key: 'autopilot_config', value: cfg })
+  configModal.classList.add('hidden')
+  showToast('✅ Saved Orca Fleet Agent & Model Configuration!')
+}
+
+
 
 async function loadWorkspaceContext() {
   var res = await callHost('workspace.readContext', {})

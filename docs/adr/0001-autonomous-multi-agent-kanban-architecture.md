@@ -98,7 +98,12 @@ Orca ADE provides an autonomous development environment with worktrees and termi
      - `Release` $\rightarrow$ `/finishing-a-development-branch` + `/resolving-merge-conflicts`
    - This ensures full fidelity between manual execution and autonomous multi-agent fleet execution.
 
+23. **Zero-Code Declarative Configuration (`.agents/config/autopilot.json` + Kanban Settings Modal)**:
+   - To prevent hardcoded workflows, all agent assignments, model names, prompt templates, review committee members, and cycle guardrails (`$need_review_time`) are declared in `.agents/config/autopilot.json` and can be overridden on-the-fly via the in-IDE Kanban Settings Modal (`storage.set('autopilot_config')`).
+   - The plugin worker dynamically reloads and merges this configuration on every pipeline run, enabling 100% no-code customization.
+
 ## Consequences
+
 
 
 

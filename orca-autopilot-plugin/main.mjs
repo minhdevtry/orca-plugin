@@ -2,6 +2,8 @@ import { fetchGitHubIssues, fetchGitLabIssues, fetchLocalMarkdownIssues, updateI
 import { syncMattPocockSkills, listMattPocockSkills } from './lib/skills-sync.mjs'
 import { PipelineOrchestrator } from './lib/pipeline-orchestrator.mjs'
 import { sendNotification } from './lib/notification-relay.mjs'
+import { discoverInstalledOrcaAgents } from './lib/orca-agent-discovery.mjs'
+
 
 export default function activate(orca) {
   orca.log('Orca AutoPilot Plugin Activating...')
@@ -65,6 +67,12 @@ export default function activate(orca) {
   orca.commands.register('autopilot-sync-skills', async () => {
     return await syncMattPocockSkills()
   })
+
+  // 7. Register RPC handler for Discovering Orca Installed Agents
+  orca.commands.register('autopilot-get-detected-agents', async () => {
+    return await discoverInstalledOrcaAgents()
+  })
+
 
   // 7. Listen to Orca Events
   orca.events.on('worktree.created', async (payload) => {

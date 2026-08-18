@@ -1,7 +1,12 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { existsSync } from 'node:fs'
 import { sendNotification } from './notification-relay.mjs'
 import { updateIssueStatus, createPullRequest } from './github-gitlab-adapter.mjs'
+import { discoverInstalledOrcaAgents, resolveOptimalOrcaAgent, ORCA_CANONICAL_AGENTS } from './orca-agent-discovery.mjs'
+
 
 const execFileAsync = promisify(execFile)
 
@@ -86,6 +91,43 @@ export const MATT_POCOCK_SKILL_PROMPTS = {
 
 export const MAX_SELF_HEALING_ATTEMPTS = 3
 
+/**
+ * Dynamically loads user fleet configuration from .agents/config/autopilot.json
+ */
+export async function loadAutopilotConfig(repoPath = process.cwd()) {
+  const possiblePaths = [
+    join(repoPath, '.agents', 'config', 'autopilot.json'),
+    join(repoPath, '.agents', 'autopilot.json'),
+    join(repoPath, 'orca-autopilot.config.json'),
+    join(repoPath, 'orca-autopilot.json')
+  ]
+
+  for (const configPath of possiblePaths) {
+    if (existsSync(configPath)) {
+      try {
+        const raw = await readFile(configPath, 'utf8')
+        const parsed = JSON.parse(raw)
+        return {
+          agentMatrix: { ...AGENT_MATRIX, ...(parsed.agentMatrix || {}) },
+          prompts: { ...MATT_POCOCK_SKILL_PROMPTS, ...(parsed.prompts || {}) },
+          needReviewTime: parsed.need_review_time ?? parsed.needReviewTime ?? 1,
+          maxAttempts: parsed.max_self_healing_attempts ?? parsed.maxAttempts ?? MAX_SELF_HEALING_ATTEMPTS,
+          sourcePath: configPath
+        }
+      } catch (e) {
+        console.warn(`[ConfigLoader] Warning reading config at ${configPath}:`, e.message)
+      }
+    }
+  }
+
+  return {
+    agentMatrix: AGENT_MATRIX,
+    prompts: MATT_POCOCK_SKILL_PROMPTS,
+    needReviewTime: 1,
+    maxAttempts: MAX_SELF_HEALING_ATTEMPTS,
+    sourcePath: 'defaults'
+  }
+}
 
 /**
  * Autonomous Pipeline State Tracker & Orchestrator
@@ -103,6 +145,12 @@ export class PipelineOrchestrator {
    * Run the complete autonomous pipeline for an issue or task
    */
   async runTaskPipeline(issue, { repoPath = process.cwd(), agentType = this.defaultAgent, needReviewTime = this.defaultNeedReviewTime } = {}) {
+    // Dynamic config loading from .agents/config/autopilot.json
+    const config = await loadAutopilotConfig(repoPath)
+    const effectiveMatrix = this.agentMatrix !== AGENT_MATRIX ? this.agentMatrix : config.agentMatrix
+    const effectiveNeedReviewTime = issue.needReviewTime || needReviewTime || config.needReviewTime || 1
+    const effectiveMaxAttempts = config.maxAttempts || MAX_SELF_HEALING_ATTEMPTS
+
     const runId = `run-${Date.now()}-${issue.number || 'task'}`
     const runState = {
       runId,
@@ -110,16 +158,18 @@ export class PipelineOrchestrator {
       stage: PIPELINE_STAGES.READY_FOR_AGENT,
       worktree: null,
       attempt: 1,
-      maxAttempts: MAX_SELF_HEALING_ATTEMPTS,
+      maxAttempts: effectiveMaxAttempts,
       reviewRound: 0,
-      needReviewTime: issue.needReviewTime || needReviewTime || 1,
+      needReviewTime: effectiveNeedReviewTime,
+      matrix: effectiveMatrix,
+      prompts: config.prompts,
       startTime: Date.now(),
       logs: [],
       error: null
     }
 
     this.activeRuns.set(runId, runState)
-    this.log(runState, `🚀 Khởi động Autonomous Pipeline cho: #${issue.number} "${issue.title}" (need_review_time=${runState.needReviewTime})`)
+    this.log(runState, `🚀 Khởi động Autonomous Pipeline cho: #${issue.number} "${issue.title}" (need_review_time=${runState.needReviewTime}, config=${config.sourcePath})`)
 
     try {
       // 1. Stage 1: SPEC & TRIAGE (If issue starts from needs-triage)
@@ -160,13 +210,11 @@ export class PipelineOrchestrator {
           this.log(runState, `⚠️ Phát hiện vấn đề từ Hội đồng Review: [Severity: ${reviewResult.severity.toUpperCase()}] - ${reviewResult.feedback}`)
 
           if (reviewResult.severity === 'minor') {
-            // Fast-path: Coder fixes in-place within Worktree + re-tests immediately
             this.log(runState, `⚡ [Fast-Path] Lỗi nhỏ: Coder Agent tự vá tại chỗ trong Worktree và chạy lại test...`)
             await this.runSelfHealingStage(runState, repoPath, reviewResult.feedback)
             reviewApproved = true
             this.log(runState, `✅ Tự vá hoàn tất và tests đã pass. Tiếp tục tiến trình...`)
           } else {
-            // Major issue: check if we should re-queue to ready-for-agent
             if (runState.reviewRound < runState.needReviewTime) {
               this.log(runState, `🔄 [Slow-Path] Lỗi lớn: Trả task về [ready-for-agent] kèm comment chi tiết cho Coder Agent giải quyết...`)
               await updateIssueStatus(issue, 'ready-for-agent', repoPath)
@@ -186,7 +234,6 @@ export class PipelineOrchestrator {
                 runState
               }
             } else {
-              // Exceeded review limit: patch best effort and proceed
               this.log(runState, `⚡ Đã đạt giới hạn review (${runState.needReviewTime} lần). Coder Agent tự fix tối đa và chốt release...`)
               await this.runSelfHealingStage(runState, repoPath, reviewResult.feedback)
               reviewApproved = true
@@ -233,7 +280,7 @@ export class PipelineOrchestrator {
    */
   async runTriageStage(runState, repoPath) {
     runState.stage = PIPELINE_STAGES.NEEDS_TRIAGE
-    const config = this.agentMatrix['needs-triage']
+    const config = runState.matrix['needs-triage'] || this.agentMatrix['needs-triage']
     this.log(runState, `[Stage 1: Triage] Sử dụng [${config.agent}] (${config.model}) phân tích 3 hướng...`)
 
     await updateIssueStatus(runState.issue, 'ready-for-agent', repoPath)
@@ -246,7 +293,7 @@ export class PipelineOrchestrator {
    */
   async runNeedsInfoStage(runState, repoPath) {
     runState.stage = PIPELINE_STAGES.NEEDS_INFO
-    const config = this.agentMatrix['needs-info']
+    const config = runState.matrix['needs-info'] || this.agentMatrix['needs-info']
     this.log(runState, `[Stage 2: Needs-Info] Kích hoạt [${config.agent}] (${config.model}) chạy 2 hướng Pro vs Con...`)
 
     await updateIssueStatus(runState.issue, 'ready-for-agent', repoPath)
@@ -260,7 +307,8 @@ export class PipelineOrchestrator {
   async runCodeStage(runState, repoPath, agentType) {
     runState.stage = PIPELINE_STAGES.IN_PROGRESS
     const branchName = `agent/task-${runState.issue.number || Date.now()}`
-    const prompt = MATT_POCOCK_SKILL_PROMPTS.implement(runState.issue)
+    const promptFn = typeof runState.prompts?.implement === 'function' ? runState.prompts.implement : MATT_POCOCK_SKILL_PROMPTS.implement
+    const prompt = promptFn(runState.issue)
     this.log(runState, `[Stage 3: Coding] Tạo Git Worktree [${branchName}] qua Orca và chạy Coder Agent (${agentType}) với lệnh /implement...`)
 
     await updateIssueStatus(runState.issue, 'in-progress', repoPath)
@@ -279,18 +327,16 @@ export class PipelineOrchestrator {
     }
   }
 
-
   /**
    * Stage 4: Tripartite Review Committee (MiniMax-M3 + Dual Antigravity)
    */
   async runTripartiteReviewStage(runState, repoPath) {
-    const committee = this.agentMatrix.review.committee
+    const committee = (runState.matrix?.review || this.agentMatrix.review).committee || AGENT_MATRIX.review.committee
     this.log(runState, `[Stage 4: Review Committee] Bắt đầu phiên thẩm định của 3 tác tử chuyên biệt:`)
     this.log(runState, `  1. [${committee[0].model}] -> Quét Syntax, Linter & Code style.`)
     this.log(runState, `  2. [${committee[1].model}] -> Thẩm định & gạn lọc feedback.`)
     this.log(runState, `  3. [${committee[2].model}] -> Soi Kiến trúc, CONTEXT.md & Xung đột module.`)
 
-    // Custom review override from issue mock if present
     if (runState.issue._mockReviewResult) {
       return runState.issue._mockReviewResult
     }
