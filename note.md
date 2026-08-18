@@ -265,3 +265,22 @@ Soi vào thư mục `ref/orca/src/main/runtime/orchestration/`:
 Trong `ref/orca/src/main/browser/cdp-bridge.ts` và `snapshot-engine.ts`:
 - Orca tích hợp sẵn headless browser tự động hóa thông qua Chrome DevTools Protocol (CDP) và accessibility tree snapshot (`orca snapshot`).
 - $\rightarrow$ *Ứng dụng cho QA/Reviewer Agent:* Khi task là phát triển Web/UI, Reviewer Agent có thể tự khởi động dev server trong Worktree, dùng lệnh `orca snapshot` và `orca eval` để kiểm tra giao diện thực tế, chụp ảnh màn hình và đính kèm vào Pull Request trên GitHub!
+
+---
+
+## 14. Khám Phá: Kỹ Năng Điều Phối Chính Thức Của Orca (`orchestration` Skill)
+
+Orca cung cấp bộ skill điều phối chính thức từ repository `https://github.com/stablyai/orca`:
+
+### 🔄 1. Lệnh Quản Lý & Cập Nhật Skill Toàn Cục
+- Cập nhật skill: `npx -y skills update orchestration --global -y`
+- Cài đặt mới: `npx -y skills add https://github.com/stablyai/orca --skill orchestration --global -y`
+- Đọc hướng dẫn chuẩn khớp version: `orca skills get orchestration`
+
+### ⚡ 2. Giao Thức Điều Phối Đa Tác Tử (Orchestration Protocol)
+- **Tạo task trong DAG**: `orca orchestration task-create --spec "..." --json`
+- **Điều phối Worker**: `orca orchestration dispatch --task <task_id> --to <terminal_handle> --inject --json`
+- **Lắng nghe kết quả không gián đoạn**: `orca orchestration check --wait --types worker_done,escalation,question --timeout-ms 900000 --json`
+- **Báo cáo hoàn tất (Worker Report)**: `orca orchestration send --type worker_done --outcome succeeded --task-id <id> --dispatch-id <id> --json`
+- **Dọn dẹp Worker**: `orca orchestration worker-release --terminal <handle>`
+- $\rightarrow$ *Ứng dụng:* Plugin AutoPilot có thể gọi trực tiếp các lệnh native này của Orca CLI để thực hiện chuỗi phối hợp giữa Spec $\rightarrow$ Coder $\rightarrow$ Tester $\rightarrow$ Reviewer một cách chuẩn xác 100%!
