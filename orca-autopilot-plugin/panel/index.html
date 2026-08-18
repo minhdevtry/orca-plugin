@@ -1079,7 +1079,7 @@
 
   <!-- Fleet Config Modal -->
   <div id="config-modal" class="modal-overlay hidden">
-    <div class="modal-panel" style="max-width: 520px;">
+    <div class="modal-panel" style="max-width: 540px;">
       <div class="modal-header-row">
         <h3>⚙️ Orca Fleet Agent & Model Configuration</h3>
         <button id="config-close-btn" class="close-btn">&times;</button>
@@ -1088,13 +1088,19 @@
         <!-- Triage -->
         <div class="field-label">Triage Agent & Provider Model (needs-triage)</div>
         <div style="display:flex;gap:6px;">
-          <select id="cfg-triage-agent" style="width:130px;">
+          <select id="cfg-triage-agent" style="width:150px;">
             <option value="claude" selected>Claude (Anthropic)</option>
             <option value="antigravity">Antigravity (Google)</option>
-            <option value="gemini">Gemini CLI</option>
+            <option value="gemini">Gemini CLI (Google)</option>
             <option value="codex">Codex (OpenAI)</option>
-            <option value="dsh">DeepSeek (DSH)</option>
+            <option value="copilot">GitHub Copilot</option>
+            <option value="opencode">OpenCode Agent</option>
+            <option value="pi">Pi Agent (pi.dev)</option>
+            <option value="cursor">Cursor Agent</option>
+            <option value="kimi">Kimi (Moonshot)</option>
+            <option value="amp">Amp Agent</option>
             <option value="grok">Grok (xAI)</option>
+            <option value="minimax">MiniMax (Mimo)</option>
           </select>
           <select id="cfg-triage-model" style="flex:1;">
             <!-- Populated dynamically based on chosen agent -->
@@ -1104,12 +1110,18 @@
         <!-- Info Gathering -->
         <div class="field-label">Information Gathering Agent & Model (needs-info)</div>
         <div style="display:flex;gap:6px;">
-          <select id="cfg-info-agent" style="width:130px;">
+          <select id="cfg-info-agent" style="width:150px;">
             <option value="antigravity" selected>Antigravity (Google)</option>
-            <option value="gemini">Gemini CLI</option>
+            <option value="gemini">Gemini CLI (Google)</option>
             <option value="claude">Claude (Anthropic)</option>
             <option value="codex">Codex (OpenAI)</option>
-            <option value="dsh">DeepSeek (DSH)</option>
+            <option value="copilot">GitHub Copilot</option>
+            <option value="opencode">OpenCode Agent</option>
+            <option value="pi">Pi Agent (pi.dev)</option>
+            <option value="cursor">Cursor Agent</option>
+            <option value="kimi">Kimi (Moonshot)</option>
+            <option value="amp">Amp Agent</option>
+            <option value="grok">Grok (xAI)</option>
           </select>
           <select id="cfg-info-model" style="flex:1;">
             <!-- Populated dynamically -->
@@ -1119,12 +1131,18 @@
         <!-- Lead Coder -->
         <div class="field-label">Lead Coder Agent & Model (in-progress)</div>
         <div style="display:flex;gap:6px;">
-          <select id="cfg-code-agent" style="width:130px;">
+          <select id="cfg-code-agent" style="width:150px;">
             <option value="claude" selected>Claude (Anthropic)</option>
             <option value="codex">Codex (OpenAI)</option>
+            <option value="copilot">GitHub Copilot</option>
             <option value="opencode">OpenCode Agent</option>
-            <option value="dsh">DeepSeek (DSH)</option>
-            <option value="pi">Pi Agent</option>
+            <option value="pi">Pi Agent (pi.dev)</option>
+            <option value="cursor">Cursor Agent</option>
+            <option value="antigravity">Antigravity (Google)</option>
+            <option value="gemini">Gemini CLI (Google)</option>
+            <option value="kimi">Kimi (Moonshot)</option>
+            <option value="amp">Amp Agent</option>
+            <option value="grok">Grok (xAI)</option>
           </select>
           <select id="cfg-code-model" style="flex:1;">
             <!-- Populated dynamically -->
@@ -1135,9 +1153,9 @@
         <div class="field-label">Research Subagent Model (Orca Provider)</div>
         <select id="cfg-research-model">
           <option value="gemini-2.5-flash" selected>Google Gemini 2.5 Flash (Fast Research - Recommended)</option>
-          <option value="claude-3-5-haiku-20241022">Anthropic Claude 3.5 Haiku</option>
-          <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
-          <option value="deepseek-chat">DeepSeek V3</option>
+          <option value="haiku">Anthropic Claude Haiku</option>
+          <option value="gpt-5.4-mini">OpenAI GPT-5.4 Mini</option>
+          <option value="opencode/deepseek-v4-flash-free">OpenCode DeepSeek V4 Flash Free</option>
         </select>
 
         <!-- Bulk Boilerplate Subagent -->
@@ -1146,7 +1164,7 @@
           <option value="minimax-m3" selected>MiniMax-M3 (High Token Budget - Recommended)</option>
           <option value="deepseek-chat">DeepSeek V3 (Cost Efficient)</option>
           <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
-          <option value="abab6.5s-chat">MiniMax abab6.5s</option>
+          <option value="gpt-5.4-mini">OpenAI GPT-5.4 Mini</option>
         </select>
 
         <!-- Review Rounds -->
@@ -1159,6 +1177,7 @@
       </div>
     </div>
   </div>
+
 
 
   <!-- Toast -->
@@ -1487,44 +1506,83 @@ function appendTaskLog(task, msg) {
 
 var ORCA_PROVIDER_MODELS = {
   claude: [
-    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet (Hybrid Reasoning - Default)' },
-    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Coding Specialist)' },
-    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast & Light)' },
-    { id: 'claude-opus-4', name: 'Claude Opus 4 (Deep Reasoning)' }
+    { id: 'sonnet', name: 'sonnet (Claude 3.7 / 3.5 Sonnet - Default)' },
+    { id: 'haiku', name: 'haiku (Claude 3.5 Haiku)' },
+    { id: 'opus', name: 'opus (Claude 3 Opus)' },
+    { id: 'claude-3-7-sonnet-20250219', name: 'claude-3-7-sonnet-20250219' },
+    { id: 'claude-3-5-sonnet-20241022', name: 'claude-3-5-sonnet-20241022' }
   ],
   antigravity: [
-    { id: 'gemini-2.5-flash-thinking', name: 'Gemini 2.5 Flash Thinking (Reasoning - Default)' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Deep Architecture)' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Ultra Fast)' }
+    { id: 'Gemini 3.5 Flash (Medium)', name: 'Gemini 3.5 Flash (Medium - Default)' },
+    { id: 'Gemini 3.5 Flash (High)', name: 'Gemini 3.5 Flash (High)' },
+    { id: 'Gemini 3.5 Flash (Low)', name: 'Gemini 3.5 Flash (Low)' },
+    { id: 'gemini-2.5-flash-thinking', name: 'gemini-2.5-flash-thinking' },
+    { id: 'gemini-2.5-pro', name: 'gemini-2.5-pro' },
+    { id: 'gemini-2.5-flash', name: 'gemini-2.5-flash' }
   ],
   gemini: [
-    { id: 'gemini-2.5-flash-thinking', name: 'Gemini 2.5 Flash Thinking (Default)' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+    { id: 'gemini-2.5-flash-thinking', name: 'gemini-2.5-flash-thinking (Default)' },
+    { id: 'gemini-2.5-pro', name: 'gemini-2.5-pro' },
+    { id: 'gemini-2.5-flash', name: 'gemini-2.5-flash' }
   ],
   codex: [
-    { id: 'gpt-4o', name: 'GPT-4o (Omni Intelligence - Default)' },
-    { id: 'o3-mini', name: 'o3-mini (High-Speed Reasoning)' },
-    { id: 'o1', name: 'o1 (Deep Reasoning)' },
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast)' }
+    { id: 'gpt-5.5', name: 'gpt-5.5 (Frontier - Default)' },
+    { id: 'gpt-5.4', name: 'gpt-5.4' },
+    { id: 'gpt-5.4-mini', name: 'gpt-5.4-mini' },
+    { id: 'gpt-5.3-codex', name: 'gpt-5.3-codex' },
+    { id: 'gpt-5.3-codex-spark', name: 'gpt-5.3-codex-spark' },
+    { id: 'gpt-5.2', name: 'gpt-5.2' },
+    { id: 'gpt-4o', name: 'gpt-4o' },
+    { id: 'o3-mini', name: 'o3-mini' },
+    { id: 'o1', name: 'o1' }
   ],
-  dsh: [
-    { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner - Default)' },
-    { id: 'deepseek-chat', name: 'DeepSeek V3 (Fast Coder)' }
+  copilot: [
+    { id: 'gpt-5.4', name: 'gpt-5.4 (Default)' },
+    { id: 'claude-sonnet-4.6', name: 'claude-sonnet-4.6' },
+    { id: 'claude-sonnet-4.5', name: 'claude-sonnet-4.5' },
+    { id: 'claude-haiku-4.5', name: 'claude-haiku-4.5' },
+    { id: 'claude-opus-4.6', name: 'claude-opus-4.6' },
+    { id: 'gpt-5.5', name: 'gpt-5.5' },
+    { id: 'gpt-5.4-mini', name: 'gpt-5.4-mini' },
+    { id: 'gpt-5.2', name: 'gpt-5.2' },
+    { id: 'auto', name: 'auto' }
   ],
   opencode: [
-    { id: 'qwen-2.5-coder-32b', name: 'Qwen 2.5 Coder 32B (Default)' },
-    { id: 'deepseek-chat', name: 'DeepSeek V3' }
+    { id: 'opencode/deepseek-v4-flash-free', name: 'opencode/deepseek-v4-flash-free (Default)' },
+    { id: 'opencode/gpt-5.4-mini', name: 'opencode/gpt-5.4-mini' },
+    { id: 'deepseek-chat', name: 'deepseek-chat (V3)' },
+    { id: 'qwen-2.5-coder-32b', name: 'qwen-2.5-coder-32b' }
   ],
   pi: [
-    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet (Default)' },
-    { id: 'gemini-2.5-flash-thinking', name: 'Gemini 2.5 Flash Thinking' }
+    { id: 'github-copilot/gpt-5.4-mini', name: 'github-copilot/gpt-5.4-mini (Default)' },
+    { id: 'anthropic/claude-3-7-sonnet', name: 'anthropic/claude-3-7-sonnet' },
+    { id: 'google/gemini-2.5-flash', name: 'google/gemini-2.5-flash' }
+  ],
+  cursor: [
+    { id: 'auto', name: 'auto (Cursor Default)' },
+    { id: 'claude-3.5-sonnet', name: 'claude-3.5-sonnet' },
+    { id: 'gpt-4o', name: 'gpt-4o' }
+  ],
+  kimi: [
+    { id: 'default', name: 'default (Config Default)' },
+    { id: 'kimi-code/kimi-for-coding', name: 'kimi-code/kimi-for-coding (K2.6)' }
+  ],
+  amp: [
+    { id: 'smart', name: 'smart (Default)' },
+    { id: 'rush', name: 'rush' },
+    { id: 'large', name: 'large' },
+    { id: 'deep', name: 'deep' }
   ],
   grok: [
-    { id: 'grok-2', name: 'Grok 2 (xAI - Default)' },
-    { id: 'grok-3', name: 'Grok 3 (xAI Reasoning)' }
+    { id: 'grok-2', name: 'grok-2 (Default)' },
+    { id: 'grok-3', name: 'grok-3 (xAI Reasoning)' }
+  ],
+  minimax: [
+    { id: 'minimax-m3', name: 'minimax-m3 (Default)' },
+    { id: 'abab6.5s-chat', name: 'abab6.5s-chat' }
   ]
 }
+
 
 function updateModelSelect(agentSelectId, modelSelectId, selectedModelId) {
   var agentEl = document.getElementById(agentSelectId)
@@ -1556,14 +1614,15 @@ function updateModelSelect(agentSelectId, modelSelectId, selectedModelId) {
 
 async function loadFleetConfig() {
   var triageAgent = 'claude'
-  var triageModel = 'claude-3-7-sonnet-20250219'
+  var triageModel = 'sonnet'
   var infoAgent = 'antigravity'
-  var infoModel = 'gemini-2.5-flash-thinking'
+  var infoModel = 'Gemini 3.5 Flash (Medium)'
   var codeAgent = 'claude'
-  var codeModel = 'claude-3-7-sonnet-20250219'
+  var codeModel = 'sonnet'
   var researchModel = 'gemini-2.5-flash'
   var bulkModel = 'minimax-m3'
   var needReviewTime = 1
+
 
   var res = await callHost('storage.get', { key: 'autopilot_config' })
   if (res && res.ok && res.data && res.data.value) {
