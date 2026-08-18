@@ -8,6 +8,13 @@ description: Use when orchestrating autonomous tasks, running subagent waves, co
 ## Overview
 End-to-end multi-agent orchestration engine for Orca ADE. Coordinates a 3-agent fleet across isolated Git Worktrees, native Decision Gates, and Matt Pocock skills with deterministic self-healing loops and strict 3-tier hierarchy enforcement.
 
+### ⚠️ CLI Executable Resolution
+Choose the Orca CLI executable once per session:
+- If `ORCA_CLI_COMMAND` is set, use its value.
+- On Linux outside an Orca-managed terminal, use `orca-ide` or `~/.local/bin/orca`. **Never run bare `/usr/bin/orca`** (which starts the GNOME Screen Reader).
+- Otherwise, use `orca`.
+- To inspect dynamic CLI flags supported by your current Orca build: `orca skills get orchestration --full`.
+
 ---
 
 ## When to Use
