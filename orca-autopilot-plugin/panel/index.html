@@ -2026,11 +2026,13 @@ async function runPipeline(task) {
     var ctxRes = await callHost('workspace.readContext', {})
     var activeTermId = ctxRes && ctxRes.data && ctxRes.data.terminals && ctxRes.data.terminals[0] ? ctxRes.data.terminals[0].id : null
     if (activeTermId) {
-      var terminalCmd = 'echo "================================================================="\n' +
+      var isMiniMax = true // Sử dụng MiniMax-M3 qua ~/.claude-ide
+      var configPrefix = isMiniMax ? 'export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && ' : ''
+      var terminalCmd = configPrefix + 'echo "================================================================="\n' +
         'echo "🚀 [Orca AutoPilot] GIAO VIỆC: Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '"\n' +
         'echo "  📋 Mô tả: ' + (task.body || task.title).replace(/"/g, '\\"').replace(/\n/g, ' ') + '"\n' +
         'echo "  🎯 Chỉ thị kỹ năng: ' + taskDirective + '"\n' +
-        'echo "  🤖 Tác tử phụ trách: ' + (task.assignee || 'Claude Code') + '"\n' +
+        'echo "  🤖 Model: MiniMax-M3 (qua ~/.claude-ide)"\n' +
         'echo "================================================================="\n' +
         'git status --short\n'
 
@@ -2039,10 +2041,11 @@ async function runPipeline(task) {
         text: terminalCmd,
         enter: true
       })
-      appendTaskLog(task, '⚡ [Terminal] Đã nạp chỉ thị [' + taskDirective + '] vào Terminal tab [' + activeTermId + ']')
+      appendTaskLog(task, '⚡ [Terminal] Đã nạp chỉ thị [' + taskDirective + '] vào Terminal tab [' + activeTermId + '] với MiniMax-M3')
     } else {
       appendTaskLog(task, 'ℹ️ [Terminal] Đang chạy quy trình nền trong Worktree...')
     }
+
   } catch (err) {
     appendTaskLog(task, '⚠️ [Terminal] ' + (err && err.message ? err.message : err))
   }

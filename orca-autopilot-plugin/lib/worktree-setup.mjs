@@ -2,31 +2,39 @@ import { existsSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * Automatically pre-trusts a worktree path in ~/.claude.json so Claude Code
- * never prompts the user for manual trust confirmation.
+ * Automatically pre-trusts a worktree path in ~/.claude.json and ~/.claude-ide/.claude.json
+ * so Claude Code (standard and MiniMax-M3) never prompts for manual trust confirmation.
  */
 export function autoTrustClaudeWorktree(worktreePath) {
-  try {
-    const home = process.env.HOME || process.env.USERPROFILE || ''
-    const claudeJsonPath = join(home, '.claude.json')
-    if (!existsSync(claudeJsonPath)) return false
+  const home = process.env.HOME || process.env.USERPROFILE || ''
+  const configCandidates = [
+    join(home, '.claude.json'),
+    join(home, '.claude-ide', '.claude.json'),
+    join(home, '.claude-ide', 'claude.json')
+  ]
 
-    const raw = readFileSync(claudeJsonPath, 'utf8')
-    const cfg = JSON.parse(raw)
-    cfg.projects = cfg.projects || {}
+  let trusted = false
+  for (const p of configCandidates) {
+    try {
+      if (existsSync(p)) {
+        const raw = readFileSync(p, 'utf8')
+        const cfg = JSON.parse(raw)
+        cfg.projects = cfg.projects || {}
 
-    cfg.projects[worktreePath] = {
-      ...(cfg.projects[worktreePath] || {}),
-      hasTrustDialogAccepted: true,
-      hasCompletedProjectOnboarding: true
-    }
+        cfg.projects[worktreePath] = {
+          ...(cfg.projects[worktreePath] || {}),
+          hasTrustDialogAccepted: true,
+          hasCompletedProjectOnboarding: true
+        }
 
-    writeFileSync(claudeJsonPath, JSON.stringify(cfg, null, 2), 'utf8')
-    return true
-  } catch (e) {
-    return false
+        writeFileSync(p, JSON.stringify(cfg, null, 2), 'utf8')
+        trusted = true
+      }
+    } catch (e) {}
   }
+  return trusted
 }
+
 
 /**
  * Automatically sets up a fresh git worktree with environment files, configs,
