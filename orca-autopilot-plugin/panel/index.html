@@ -394,29 +394,30 @@
       gap: 8px;
     }
 
-    /* Cards */
+    /* Cards - Minimalist & Elegant */
     .orca-card {
       background-color: var(--app-card);
       color: var(--app-card-fg);
       border: 1px solid var(--app-border);
-      border-radius: calc(var(--app-radius) - 2px);
-      padding: 8px;
+      border-radius: var(--app-radius);
+      padding: 10px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-      transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      gap: 7px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: all 0.15s ease;
     }
 
     .orca-card:hover {
       border-color: var(--app-primary);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
     }
 
     .orca-card.active-selected {
-      border-color: #3b82f6;
-      background-color: rgba(59, 130, 246, 0.03);
+      border-color: var(--app-primary);
+      background-color: var(--app-muted);
     }
 
     .orca-card.dragging {
@@ -428,31 +429,20 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: 11px;
       color: var(--app-muted-fg);
     }
 
-    .card-repo-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-weight: 500;
-    }
-
-    .card-source-pill {
-      font-size: 9px;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background-color: var(--app-muted);
-      color: var(--app-fg);
-      text-transform: uppercase;
+    .card-id-pill {
+      font-size: 11px;
       font-weight: 600;
+      color: var(--app-muted-fg);
     }
 
     .card-title-text {
       font-size: 12px;
-      font-weight: 500;
-      line-height: 1.3;
+      font-weight: 600;
+      line-height: 1.35;
       color: var(--app-fg);
       word-break: break-word;
     }
@@ -464,21 +454,28 @@
     }
 
     .card-label-badge {
-      font-size: 9px;
-      padding: 1px 5px;
-      border-radius: 3px;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 12px;
       background-color: var(--app-muted);
       color: var(--app-muted-fg);
       border: 1px solid var(--app-border);
+      font-weight: 500;
     }
 
     .card-footer-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-top: 4px;
-      border-top: 1px dashed var(--app-border);
+      margin-top: 2px;
       font-size: 10px;
+      color: var(--app-muted-fg);
+    }
+
+    .card-assignee {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       color: var(--app-muted-fg);
     }
 
@@ -488,30 +485,14 @@
       gap: 4px;
       font-size: 10px;
       font-weight: 500;
-      color: var(--app-fg);
+      color: var(--app-muted-fg);
     }
 
     .agent-dot {
-      width: 5px;
-      height: 5px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background-color: #22c55e;
-    }
-
-    .card-action-btn {
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 9px;
-      font-weight: 500;
-      cursor: pointer;
-      border: 1px solid var(--app-border);
-      background-color: var(--app-muted);
-      color: var(--app-fg);
-    }
-
-    .card-action-btn:hover {
-      background-color: var(--app-accent);
-      color: var(--app-accent-fg);
     }
 
     /* Modal dialogs */
@@ -596,137 +577,173 @@
       margin-top: 4px;
     }
 
-    /* Slide-out Task Detail & Multi-Agent Log Drawer */
-    .task-drawer-overlay {
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 420px;
-      max-width: 90vw;
-      background-color: var(--app-bg);
-      border-left: 1px solid var(--app-border);
-      box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-      z-index: 50;
+    /* Orca Native Issue Detail View (Matching Screenshot 2) */
+    .issue-detail-view {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      transition: transform 0.2s ease;
+      gap: 16px;
+      padding: 14px 18px;
+      background-color: var(--app-bg);
+      color: var(--app-fg);
     }
 
-    .task-drawer-overlay.hidden {
-      display: none;
+    .issue-detail-view.hidden {
+      display: none !important;
     }
 
-    .drawer-header {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--app-border);
+    .issue-nav-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: var(--app-muted);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--app-border);
     }
 
-    .drawer-title-group {
+    .back-btn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: var(--app-muted-fg);
+      font-weight: 500;
+      background: none;
+      border: none;
+      font-size: 12px;
+    }
+
+    .back-btn-link:hover {
+      color: var(--app-fg);
+    }
+
+    .btn-start-workspace {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background-color: var(--app-primary);
+      color: var(--app-primary-fg);
+      border: 1px solid transparent;
+      border-radius: var(--app-radius);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-start-workspace:hover {
+      opacity: 0.9;
+    }
+
+    .issue-main-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .issue-title-large {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--app-fg);
+      line-height: 1.3;
+    }
+
+    .issue-meta-subrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--app-muted-fg);
+    }
+
+    .issue-state-badge-open {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background-color: #10b98115;
+      color: #10b981;
+      border: 1px solid #10b98140;
+    }
+
+    .issue-props-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid var(--app-border);
+      border-bottom: 1px solid var(--app-border);
+    }
+
+    .prop-col-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--app-muted-fg);
+      margin-bottom: 4px;
+    }
+
+    .prop-col-val {
+      font-size: 11px;
+      color: var(--app-fg);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .issue-body-card {
+      border: 1px solid var(--app-border);
+      border-radius: var(--app-radius);
+      background-color: var(--app-card);
+      overflow: hidden;
+    }
+
+    .issue-body-card-header {
+      padding: 8px 12px;
+      background-color: var(--app-muted);
+      border-bottom: 1px solid var(--app-border);
+      font-size: 11px;
+      color: var(--app-muted-fg);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .drawer-title-group h2 {
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.2;
-    }
-
-    .drawer-body {
-      flex: 1;
-      padding: 12px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .drawer-section {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .drawer-section-title {
-      font-size: 11px;
-      font-weight: 600;
+    .issue-body-card-content {
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.5;
       color: var(--app-fg);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .drawer-info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      background: var(--app-muted);
-      padding: 8px;
-      border-radius: var(--app-radius);
-      border: 1px solid var(--app-border);
-      font-size: 11px;
-    }
-
-    .info-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .info-label {
-      font-size: 10px;
-      color: var(--app-muted-fg);
-    }
-
-    .committee-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .committee-item {
-      background-color: var(--app-card);
-      border: 1px solid var(--app-border);
-      border-radius: var(--app-radius);
-      padding: 8px;
-      font-size: 11px;
-    }
-
-    .comm-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .comm-role {
-      font-size: 9px;
-      color: var(--app-muted-fg);
-      font-weight: normal;
-    }
-
-    .comm-status {
-      font-size: 10px;
-      color: var(--app-muted-fg);
-      line-height: 1.3;
-    }
-
-    .drawer-spec-box {
-      background: var(--app-muted);
-      padding: 8px;
-      border-radius: var(--app-radius);
-      border: 1px solid var(--app-border);
-      font-size: 11px;
-      line-height: 1.4;
       white-space: pre-wrap;
+    }
+
+    .issue-activity-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .issue-activity-title {
+      font-size: 11px;
+      font-weight: 600;
       color: var(--app-fg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .detail-actions-bar {
+      display: flex;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--app-border);
     }
 
     .logs-console-box {
@@ -734,11 +751,11 @@
       color: #58a6ff;
       border: 1px solid #30363d;
       border-radius: var(--app-radius);
-      padding: 8px;
+      padding: 8px 10px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 10px;
       line-height: 1.4;
-      height: 160px;
+      height: 120px;
       overflow-y: auto;
     }
 
@@ -752,13 +769,6 @@
     .log-warn { color: #d29922; }
     .log-err { color: #f85149; }
 
-    .drawer-footer {
-      padding: 10px 14px;
-      border-top: 1px solid var(--app-border);
-      display: flex;
-      gap: 6px;
-      background: var(--app-muted);
-    }
 
     /* Toast */
     .orca-toast {
@@ -936,74 +946,95 @@
   </div>
 
 
-  <!-- Slide-out Task Detail & Multi-Agent Log Drawer -->
-  <div id="task-drawer" class="task-drawer-overlay hidden">
-    <div class="task-drawer-panel" style="display:flex;flex-direction:column;height:100%;">
-      <div class="drawer-header">
-        <div class="drawer-title-group">
-          <span id="drawer-task-badge" class="card-source-pill">#1</span>
-          <h2 id="drawer-task-title">Task Title</h2>
-        </div>
-        <button id="drawer-close-btn" class="close-btn">&times;</button>
-      </div>
+  <!-- Orca Native Issue Detail View (Matching Screenshot 2) -->
+  <div id="issue-detail-view" class="issue-detail-view hidden">
+    <!-- Top Nav -->
+    <div class="issue-nav-bar">
+      <button id="btn-back-to-board" class="back-btn-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        <span>GitHub List</span>
+        <span style="opacity:0.6;margin:0 4px;">•</span>
+        <span id="detail-repo-context">minhdevtry / orca-plugin</span>
+        <span id="detail-issue-number" style="margin-left:4px;font-weight:bold;">#6</span>
+      </button>
 
-      <div class="drawer-body">
-        <!-- Stage & Agent Overview -->
-        <div class="drawer-section">
-          <div class="drawer-section-title">Stage & Assigned Agent</div>
-          <div class="drawer-info-grid">
-            <div class="info-cell"><span class="info-label">Lane:</span> <strong id="drawer-lane-val">in-progress</strong></div>
-            <div class="info-cell"><span class="info-label">Worktree:</span> <code id="drawer-worktree-val">agent/task-1</code></div>
-            <div class="info-cell"><span class="info-label">Lead Agent:</span> <strong id="drawer-agent-val">Claude 3.7</strong></div>
-            <div class="info-cell"><span class="info-label">Review Guardrail:</span> <span id="drawer-review-limit-val">1 round</span></div>
-          </div>
-        </div>
+      <button id="detail-btn-start-workspace" class="btn-start-workspace">
+        <span>Start workspace from issue</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14"/>
+          <path d="m12 5 7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
 
-        <!-- Tripartite Review Committee Box -->
-        <div class="drawer-section">
-          <div class="drawer-section-title">👥 Tripartite Review Committee (Stage 4)</div>
-          <div class="committee-cards">
-            <div class="committee-item">
-              <div class="comm-header"><span>🔬 Agent 1: MiniMax-M3</span> <span class="comm-role">Syntax & Lint Scan</span></div>
-              <div id="drawer-comm-agent1" class="comm-status">✅ Passed (No syntax or formatting errors)</div>
-            </div>
-            <div class="committee-item">
-              <div class="comm-header"><span>⚡ Agent 2: Antigravity / Gemini</span> <span class="comm-role">Feedback Verifier</span></div>
-              <div id="drawer-comm-agent2" class="comm-status">✅ Passed (Filtered & verified feedback)</div>
-            </div>
-            <div class="committee-item">
-              <div class="comm-header"><span>🏛️ Agent 3: Antigravity Arch</span> <span class="comm-role">Architecture & CONTEXT.md</span></div>
-              <div id="drawer-comm-agent3" class="comm-status">✅ Passed (Module boundaries respected)</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Spec & Description -->
-        <div class="drawer-section">
-          <div class="drawer-section-title">📋 Spec / Description</div>
-          <div id="drawer-spec-content" class="drawer-spec-box">No spec content provided.</div>
-        </div>
-
-        <!-- Real-Time Multi-Agent Logs Console -->
-        <div class="drawer-section">
-          <div class="drawer-section-title">
-            <span>📟 Real-Time Multi-Agent Logs</span>
-            <button id="drawer-clear-logs" class="orca-btn" style="padding:2px 6px;font-size:10px;">Clear</button>
-          </div>
-          <div id="drawer-logs-console" class="logs-console-box">
-            <div class="log-line log-system">[Orchestrator] Task ready. Click "Run Pipeline" to launch multi-agent workflow.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="drawer-footer">
-        <button id="drawer-btn-run" class="orca-btn orca-btn-primary">🚀 Run Pipeline</button>
-        <button id="drawer-btn-diff" class="orca-btn">🔍 View Diff</button>
-        <button id="drawer-btn-term" class="orca-btn">⚡ Focus Terminal</button>
-        <button id="drawer-btn-close" class="orca-btn">Close</button>
+    <!-- Main Header -->
+    <div class="issue-main-header">
+      <div class="issue-title-large" id="detail-title">Bi-Directional GitHub and GitLab Issue Tracker Synchronization #6</div>
+      <div class="issue-meta-subrow">
+        <span class="issue-state-badge-open">
+          <span class="agent-dot" style="background:#10b981;"></span>
+          <span id="detail-status-badge">Open</span>
+        </span>
+        <span id="detail-author-info">minhdevtry opened this issue · updated just now</span>
       </div>
     </div>
+
+    <!-- 4 Metadata Fields (STATUS, ASSIGNEES, LABELS, WORKSPACE) -->
+    <div class="issue-props-grid">
+      <div class="prop-col">
+        <div class="prop-col-title">STATUS</div>
+        <div class="prop-col-val" id="detail-prop-status">
+          <span class="list-status-pill" style="border:1px solid var(--app-border);">● Open ▾</span>
+        </div>
+      </div>
+      <div class="prop-col">
+        <div class="prop-col-title">ASSIGNEES</div>
+        <div class="prop-col-val" id="detail-prop-assignee">minhdn3</div>
+      </div>
+      <div class="prop-col">
+        <div class="prop-col-title">LABELS</div>
+        <div class="prop-col-val" id="detail-prop-labels">
+          <span class="card-label-badge" id="detail-label-chip">needs-triage</span>
+        </div>
+      </div>
+      <div class="prop-col">
+        <div class="prop-col-title">WORKSPACE</div>
+        <div class="prop-col-val" id="detail-prop-workspace" style="font-family:monospace;font-size:10px;">None yet</div>
+      </div>
+    </div>
+
+    <!-- Issue Body Card -->
+    <div class="issue-body-card">
+      <div class="issue-body-card-header">
+        <div style="width:18px;height:18px;border-radius:50%;background:var(--app-muted);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;">m</div>
+        <span id="detail-card-author">minhdevtry updated just now</span>
+      </div>
+      <div class="issue-body-card-content" id="detail-card-body">
+        Spec:: Real-time 2-way sync between Kanban drag-and-drop and GitHub/GitLab issue labels.
+      </div>
+    </div>
+
+    <!-- Activity & Multi-Agent Pipeline Status -->
+    <div class="issue-activity-section">
+      <div class="issue-activity-title">
+        <span>💬 Activity & Real-Time Agent Logs</span>
+      </div>
+      <div id="detail-logs-console" class="logs-console-box">
+        <div class="log-line log-system">[Orchestrator] Ready. Click "Start workspace from issue" to launch autonomous multi-agent pipeline.</div>
+      </div>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="detail-actions-bar">
+      <button id="detail-btn-run-pipeline" class="orca-btn orca-btn-primary">🚀 Run Multi-Agent Pipeline</button>
+      <button id="detail-btn-focus-term" class="orca-btn">⚡ Focus Terminal</button>
+      <button id="detail-btn-view-diff" class="orca-btn">🔍 View Diff</button>
+      <button id="detail-btn-back" class="orca-btn">← Back to Board</button>
+    </div>
   </div>
+
 
   <!-- New Task Modal -->
   <div id="task-modal" class="modal-overlay hidden">
@@ -1195,15 +1226,15 @@ var configSaveBtn = document.getElementById('config-save-btn')
 var btnSyncSkills = document.getElementById('btn-sync-skills')
 var btnReload = document.getElementById('btn-reload')
 
-// Drawer DOM
-var taskDrawer = document.getElementById('task-drawer')
-var drawerCloseBtn = document.getElementById('drawer-close-btn')
-var drawerBtnClose = document.getElementById('drawer-btn-close')
-var drawerBtnRun = document.getElementById('drawer-btn-run')
-var drawerBtnDiff = document.getElementById('drawer-btn-diff')
-var drawerBtnTerm = document.getElementById('drawer-btn-term')
-var drawerClearLogs = document.getElementById('drawer-clear-logs')
-var drawerLogsConsole = document.getElementById('drawer-logs-console')
+// Issue Detail View DOM
+var issueDetailView = document.getElementById('issue-detail-view')
+var btnBackToBoard = document.getElementById('btn-back-to-board')
+var detailBtnBack = document.getElementById('detail-btn-back')
+var detailBtnStartWorkspace = document.getElementById('detail-btn-start-workspace')
+var detailBtnRunPipeline = document.getElementById('detail-btn-run-pipeline')
+var detailBtnFocusTerm = document.getElementById('detail-btn-focus-term')
+var detailBtnViewDiff = document.getElementById('detail-btn-view-diff')
+var detailLogsConsole = document.getElementById('detail-logs-console')
 
 function initListeners() {
   searchInput.addEventListener('input', function (e) {
@@ -1241,7 +1272,6 @@ function initListeners() {
   }
 
   btnReload.addEventListener('click', function () {
-
     showToast('Refreshing tasks...')
     loadWorkspaceContext().then(loadTasks)
   })
@@ -1306,62 +1336,85 @@ function initListeners() {
     renderBoard()
   })
 
-  // Drawer Listeners
-  drawerCloseBtn.addEventListener('click', closeTaskDrawer)
-  drawerBtnClose.addEventListener('click', closeTaskDrawer)
+  // Issue Detail Listeners
+  if (btnBackToBoard) btnBackToBoard.addEventListener('click', closeIssueDetailView)
+  if (detailBtnBack) detailBtnBack.addEventListener('click', closeIssueDetailView)
 
-  drawerClearLogs.addEventListener('click', function () {
-    if (activeDrawerTask) {
-      activeDrawerTask.logs = []
-      persistTasks()
-      renderDrawerLogs(activeDrawerTask)
-    }
-  })
+  if (detailBtnStartWorkspace) {
+    detailBtnStartWorkspace.addEventListener('click', function () {
+      if (activeDrawerTask) {
+        runPipeline(activeDrawerTask)
+      }
+    })
+  }
 
-  drawerBtnRun.addEventListener('click', function () {
-    if (activeDrawerTask) {
-      runPipeline(activeDrawerTask)
-    }
-  })
+  if (detailBtnRunPipeline) {
+    detailBtnRunPipeline.addEventListener('click', function () {
+      if (activeDrawerTask) {
+        runPipeline(activeDrawerTask)
+      }
+    })
+  }
 
-  drawerBtnDiff.addEventListener('click', function () {
-    callHost('file.openChanged', { mode: 'diff' })
-    showToast('Đang mở Trình xem Diff của Orca...')
-  })
+  if (detailBtnDiff) {
+    detailBtnDiff.addEventListener('click', function () {
+      callHost('file.openChanged', { mode: 'diff' })
+      showToast('Đang mở Trình xem Diff của Orca...')
+    })
+  }
 
-  drawerBtnTerm.addEventListener('click', function () {
-    if (activeDrawerTask) {
-      var wtName = activeDrawerTask.worktree || ('agent/task-' + activeDrawerTask.number)
-      callHost('terminal.focus', { worktree: wtName })
-      showToast('Đang chuyển tới tab Worktree: ' + wtName)
-    }
-  })
+  if (detailBtnFocusTerm) {
+    detailBtnFocusTerm.addEventListener('click', function () {
+      if (activeDrawerTask) {
+        var wtName = activeDrawerTask.worktree || ('agent/task-' + activeDrawerTask.number)
+        callHost('terminal.focus', { worktree: wtName })
+        showToast('Đang chuyển tới tab Worktree: ' + wtName)
+      }
+    })
+  }
 }
 
-function openTaskDrawer(task) {
+function openIssueDetailView(task) {
   activeDrawerTask = task
-  document.getElementById('drawer-task-badge').textContent = '#' + task.number
-  document.getElementById('drawer-task-title').textContent = task.title
-  document.getElementById('drawer-lane-val').textContent = task.column || 'needs-triage'
-  document.getElementById('drawer-worktree-val').textContent = task.worktree || ('agent/task-' + task.number)
-  document.getElementById('drawer-agent-val').textContent = task.assignee || 'Claude 3.7'
-  document.getElementById('drawer-review-limit-val').textContent = (task.needReviewTime || 1) + ' round(s)'
-  document.getElementById('drawer-spec-content').textContent = task.body || 'No spec content provided.'
 
-  renderDrawerLogs(task)
-  taskDrawer.classList.remove('hidden')
-  renderBoard()
+  document.getElementById('detail-issue-number').textContent = '#' + task.number
+  document.getElementById('detail-title').textContent = task.title + ' #' + task.number
+  document.getElementById('detail-status-badge').textContent = 'Open'
+  document.getElementById('detail-author-info').textContent = (task.assignee || 'minhdevtry') + ' opened this issue · updated just now'
+  document.getElementById('detail-prop-status').innerHTML = '<span class="list-status-pill" style="border:1px solid var(--app-border);">● Open ▾</span>'
+  document.getElementById('detail-prop-assignee').textContent = task.assignee || 'minhdn3'
+  
+  var labelText = (task.labels && task.labels[0]) || task.column || 'needs-triage'
+  document.getElementById('detail-label-chip').textContent = labelText
+  document.getElementById('detail-prop-workspace').textContent = task.worktree || ('agent/task-' + task.number)
+  document.getElementById('detail-card-author').textContent = (task.assignee || 'minhdevtry') + ' updated just now'
+  document.getElementById('detail-card-body').textContent = task.body || ('Spec:: ' + task.title)
+
+  renderDetailLogs(task)
+
+  // Switch view
+  document.querySelector('.toolbar-row').classList.add('hidden')
+  kanbanGridEl.classList.add('hidden')
+  tasksListContainer.classList.add('hidden')
+  issueDetailView.classList.remove('hidden')
 }
 
-function closeTaskDrawer() {
-  taskDrawer.classList.add('hidden')
+function closeIssueDetailView() {
+  issueDetailView.classList.add('hidden')
+  document.querySelector('.toolbar-row').classList.remove('hidden')
+  if (currentViewMode === 'board') {
+    kanbanGridEl.classList.remove('hidden')
+  } else {
+    tasksListContainer.classList.remove('hidden')
+  }
   activeDrawerTask = null
   renderBoard()
 }
 
-function renderDrawerLogs(task) {
-  drawerLogsConsole.innerHTML = ''
-  var logs = task.logs || ['[' + new Date().toLocaleTimeString() + '] Initialized task.']
+function renderDetailLogs(task) {
+  if (!detailLogsConsole) return
+  detailLogsConsole.innerHTML = ''
+  var logs = task.logs || ['[' + new Date().toLocaleTimeString() + '] Initialized task #' + task.number]
   logs.forEach(function (log) {
     var line = document.createElement('div')
     line.className = 'log-line'
@@ -1370,9 +1423,9 @@ function renderDrawerLogs(task) {
     else if (log.indexOf('Error') !== -1 || log.indexOf('❌') !== -1) line.className += ' log-err'
     else if (log.indexOf('Stage') !== -1 || log.indexOf('🚀') !== -1) line.className += ' log-stage'
     line.textContent = log
-    drawerLogsConsole.appendChild(line)
+    detailLogsConsole.appendChild(line)
   })
-  drawerLogsConsole.scrollTop = drawerLogsConsole.scrollHeight
+  detailLogsConsole.scrollTop = detailLogsConsole.scrollHeight
 }
 
 function appendTaskLog(task, msg) {
@@ -1380,12 +1433,13 @@ function appendTaskLog(task, msg) {
   var entry = '[' + new Date().toLocaleTimeString() + '] ' + msg
   task.logs.push(entry)
   if (activeDrawerTask && activeDrawerTask.id === task.id) {
-    renderDrawerLogs(task)
+    renderDetailLogs(task)
   }
   persistTasks()
 }
 
 async function loadFleetConfig() {
+
   var res = await callHost('storage.get', { key: 'autopilot_config' })
   if (res && res.ok && res.data && res.data.value) {
     var cfg = res.data.value
@@ -1612,7 +1666,7 @@ function renderListView() {
       '</div>'
 
     row.addEventListener('click', function () {
-      openTaskDrawer(t)
+      openIssueDetailView(t)
     })
 
     var runBtn = row.querySelector('.list-btn-run')
@@ -1627,7 +1681,7 @@ function renderListView() {
     if (inspectBtn) {
       inspectBtn.addEventListener('click', function (e) {
         e.stopPropagation()
-        openTaskDrawer(t)
+        openIssueDetailView(t)
       })
     }
 
@@ -1638,14 +1692,14 @@ function renderListView() {
 
 function getAgentBadgeForColumn(column) {
   switch (column) {
-    case 'needs-triage': return '🤖 Claude (Triage)'
-    case 'needs-info': return '⚡ Gemini / AGY'
-    case 'ready-for-agent': return '⏳ Claude (Queued)'
-    case 'in-progress': return '🚀 Claude + Fleet'
-    case 'review': return '👥 Hội Đồng 3 Agent'
+    case 'needs-triage': return '🤖 Claude'
+    case 'needs-info': return '⚡ Gemini'
+    case 'ready-for-agent': return '⏳ Claude'
+    case 'in-progress': return '🚀 Claude'
+    case 'review': return '👥 3-Agent Review'
     case 'ready-for-human': return '👀 Ready for Human'
-    case 'done': return '✅ Merged & Done'
-    default: return 'Auto-Assigned'
+    case 'done': return '✅ Done'
+    default: return 'Auto'
   }
 }
 
@@ -1665,33 +1719,19 @@ function createCardElement(t) {
     .map(function (label) { return '<span class="card-label-badge">' + escapeHtml(label) + '</span>' })
     .join('')
 
-  var actionBtnHtml = ''
-  if (col === 'ready-for-human') {
-    actionBtnHtml = '<button class="card-action-btn btn-view-diff" style="background:var(--app-primary);color:var(--app-primary-fg)">🔍 Diff</button>'
-  } else if (col === 'in-progress') {
-    actionBtnHtml = '<button class="card-action-btn btn-focus-term" style="background:var(--app-muted);color:var(--app-fg)">⚡ Terminal</button>'
-  } else if (col === 'review') {
-    actionBtnHtml = '<button class="card-action-btn btn-inspect-review" style="background:#8b5cf6;color:#ffffff">👥 Committee</button>'
-  } else if (col === 'needs-triage' || col === 'ready-for-agent') {
-    actionBtnHtml = '<button class="card-action-btn btn-auto-run">🚀 Run</button>'
-  }
-
   card.innerHTML =
     '<div class="card-top-row">' +
-      '<span class="card-repo-tag">' +
-        '<span class="card-source-pill">' + escapeHtml(t.source) + '</span>' +
-        '<span>#' + escapeHtml(t.number) + '</span>' +
-      '</span>' +
-      '<span class="card-time">' + (t.logs ? t.logs.length + ' logs' : 'ready') + '</span>' +
+      '<span class="card-id-pill">#' + escapeHtml(t.number) + '</span>' +
+      '<span style="font-size:9px;color:var(--app-muted-fg);text-transform:uppercase;">' + escapeHtml(t.source) + '</span>' +
     '</div>' +
     '<div class="card-title-text">' + escapeHtml(t.title) + '</div>' +
     (labelsHtml ? '<div class="card-tags-row">' + labelsHtml + '</div>' : '') +
     '<div class="card-footer-row">' +
+      '<span class="card-assignee">' + escapeHtml(t.assignee || 'minhdn3') + '</span>' +
       '<span class="card-agent-indicator">' +
         '<span class="agent-dot"></span>' +
         escapeHtml(agentBadgeText) +
       '</span>' +
-      actionBtnHtml +
     '</div>'
 
   card.addEventListener('dragstart', function (e) {
@@ -1707,48 +1747,14 @@ function createCardElement(t) {
     draggedTaskId = null
   })
 
-  // Card click: opens full inspection drawer with live logs & review breakdown
+  // Card click: opens the full native issue detail reader (Screenshot 2)
   card.addEventListener('click', function () {
-    openTaskDrawer(t)
+    openIssueDetailView(t)
   })
-
-  var runBtn = card.querySelector('.btn-auto-run')
-  if (runBtn) {
-    runBtn.addEventListener('click', function (e) {
-      e.stopPropagation()
-      runPipeline(t)
-    })
-  }
-
-  var diffBtn = card.querySelector('.btn-view-diff')
-  if (diffBtn) {
-    diffBtn.addEventListener('click', function (e) {
-      e.stopPropagation()
-      callHost('file.openChanged', { mode: 'diff' })
-      showToast('Đang mở Trình xem Diff của Orca...')
-    })
-  }
-
-  var termBtn = card.querySelector('.btn-focus-term')
-  if (termBtn) {
-    termBtn.addEventListener('click', function (e) {
-      e.stopPropagation()
-      var wtName = t.worktree || ('agent/task-' + t.number)
-      callHost('terminal.focus', { worktree: wtName })
-      showToast('Đang chuyển tới tab Worktree: ' + wtName)
-    })
-  }
-
-  var revBtn = card.querySelector('.btn-inspect-review')
-  if (revBtn) {
-    revBtn.addEventListener('click', function (e) {
-      e.stopPropagation()
-      openTaskDrawer(t)
-    })
-  }
 
   return card
 }
+
 
 function setupDragAndDrop() {
   document.querySelectorAll('.kanban-lane').forEach(function (lane) {
