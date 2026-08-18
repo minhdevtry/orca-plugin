@@ -217,3 +217,18 @@ Trong `src/shared/agent-status-types.ts` (L21-L44), Orca đã chuẩn hóa sẵn
 Trong `src/main/runtime/orca-runtime.ts` (L14202-L14224), phương thức `dispatchPluginNotification` (`notifications.show`) tự động kích hoạt cả:
 - Native OS Notification trên máy tính.
 - Web Relay đẩy trực tiếp sang ứng dụng di động **Orca Mobile** của người dùng.
+
+---
+
+## 11. Hợp Nhất Động Cơ DeepSeek Harness (DSH) & Orca Browser CDP
+
+Rà soát `ref/deepseek-harness` và hệ thống Browser Automation của Orca (`ref/orca/src/main/browser`):
+
+### 🤖 1. DeepSeek Harness (`dsh`) làm Coder Engine
+- **Cấu trúc Plugin Cordis**: `dsh` xây dựng trên kiến trúc micro-plugin (`packages/subagent`, `packages/mcp`, `packages/workflow`, `packages/plan`, `packages/e2b`).
+- **Khả năng phối hợp**: Cung cấp khả năng suy luận sâu (DeepSeek Reasoning R1/V3) và tự spawn Subagents nội bộ cho các tác vụ thuật toán hoặc backend phức tạp.
+
+### 🌐 2. Orca Browser Automation qua Chrome DevTools Protocol (CDP)
+Trong `src/main/browser/cdp-bridge.ts` và `snapshot-engine.ts`:
+- Orca tích hợp sẵn headless browser tự động hóa thông qua accessibility tree snapshot (`orca snapshot`).
+- $\rightarrow$ *Ứng dụng cho QA/Reviewer Agent:* Khi task là phát triển Web/UI, Reviewer Agent có thể tự khởi động dev server trong Worktree, dùng lệnh `orca snapshot` và `orca eval` để kiểm tra giao diện thực tế, chụp ảnh màn hình và đính kèm vào Pull Request trên GitHub!
