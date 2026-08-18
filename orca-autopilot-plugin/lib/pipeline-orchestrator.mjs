@@ -354,13 +354,27 @@ export class PipelineOrchestrator {
           ['worktree', 'create', '--name', branchName, '--json'],
           { cwd: repoPath, timeout: 10000 }
         )
-        // 2. Spawn interactive Claude Code terminal inside the new child worktree and focus it
-        const agentCmd = `export ANTHROPIC_BASE_URL="https://aiapi.2tocom.space" && export ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU" && export ANTHROPIC_MODEL="MiniMax-M3" && export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && claude --permission-mode bypassPermissions --dangerously-skip-permissions`
+        // 2. Build agent launcher command dynamically
+        let agentCmd = ''
+        let agentTitle = `worker-${branchName}`
+        if (agentType === 'antigravity' || agentType === 'agy') {
+          agentCmd = `agy --model gemini-3.7-flash-high`
+          agentTitle = `worker-agy`
+        } else if (agentType === 'claude-official' || agentType === 'claude-team') {
+          agentCmd = `unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL CLAUDE_CONFIG_DIR && claude --permission-mode bypassPermissions --dangerously-skip-permissions`
+          agentTitle = `Official Claude`
+        } else {
+          // Default: MiniMax-M3 via ~/.claude-ide
+          agentCmd = `export ANTHROPIC_BASE_URL="https://aiapi.2tocom.space" && export ANTHROPIC_API_KEY="sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU" && export ANTHROPIC_MODEL="MiniMax-M3" && export CLAUDE_CONFIG_DIR="$HOME/.claude-ide" && claude --permission-mode bypassPermissions --dangerously-skip-permissions`
+          agentTitle = `MiniMax-M3`
+        }
+
         await execFileAsync(
           orcaBin,
-          ['terminal', 'create', '--worktree', `name:${branchName}`, '--command', agentCmd, '--focus', '--json'],
+          ['terminal', 'create', '--worktree', `name:${branchName}`, '--title', agentTitle, '--command', agentCmd, '--focus', '--json'],
           { cwd: repoPath, timeout: 10000 }
         )
+
 
 
         runState.worktree = branchName

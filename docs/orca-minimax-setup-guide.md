@@ -163,7 +163,53 @@ orca terminal create \
 
 ---
 
-## 5. 🛠️ Cẩm Nang Khắc Phục Sự Cố (Troubleshooting FAQ)
+## 5. 🤖 Điều Phối Subagent: Antigravity CLI (`agy`) Với Gemini 3.7 Flash High
+
+Khi cần chia việc cho subagent hoặc phân chia tác vụ đa tác tử (Orchestration):
+- Sử dụng Agent **`agy`** (Google Antigravity CLI) với model **`gemini-3.7-flash-high`**.
+
+### 5.1. Cài Đặt Standalone Antigravity CLI:
+> ⚠️ **Lưu ý quan trọng**: Không dùng bản IDE (`antigravity-ide` / `alias antigravity`). Phải cài đặt đúng bản CLI độc lập `agy` tại `~/.local/bin/agy`:
+
+```bash
+# Xóa symlink cũ nếu có và tải bản CLI chính thức:
+rm -f ~/.local/bin/agy
+curl -fsSL https://antigravity.google/cli/install.sh | bash
+```
+
+Kiểm tra phiên bản:
+```bash
+agy --version
+# Output: 1.1.14 (ELF 64-bit executable)
+```
+
+---
+
+### 5.2. Khởi Động Antigravity Subagent Trong Orca ADE (Custom-Argv):
+> 💡 **Quy tắc vàng**: Orca ADE không hỗ trợ `worker-start --model gemini...` (vì catalog mặc định chỉ nhận Claude/Codex/Cursor). Thay vào đó, **phải khởi chạy `agy` bằng `custom-argv` qua `orca terminal create`**:
+
+```bash
+orca terminal create \
+  --worktree "name:agent/subagent-agy" \
+  --title "worker-agy" \
+  --command "agy --model gemini-3.7-flash-high --dangerously-skip-permissions" \
+  --focus \
+  --json
+```
+
+### 5.3. Giao Task Cho Antigravity Worker:
+Sau khi terminal khởi tạo, gửi chỉ thị trực tiếp vào handle của terminal con:
+```bash
+orca terminal send \
+  --terminal <terminalHandle> \
+  --text "Chào bạn! Hãy thực thi task #101 theo /implement..." \
+  --enter \
+  --json
+```
+
+---
+
+## 6. 🛠️ Cẩm Nang Khắc Phục Sự Cố (Troubleshooting FAQ)
 
 | Triệu chứng | Nguyên nhân cốt lõi | Cách xử lý dứt điểm |
 | :--- | :--- | :--- |
@@ -173,3 +219,5 @@ orca terminal create \
 | **Hỏi Trust folder mỗi khi mở Worktree** | Worktree mới chưa được đăng ký trong `projects` config. | Hàm `autoTrustClaudeWorktree()` trong `worktree-setup.mjs` sẽ tự ghi `hasTrustDialogAccepted: true`. |
 | **Claude trả lời xong tự thoát về Shell** | Chạy cờ `-p` (Print mode). | Chạy trực tiếp `claude` (không có `-p`) để giữ phiên tương tác Interactive REPL. |
 | **Hỏi quyền khi đọc/ghi file hoặc chạy Bash** | Chưa bật Bypass Permissions mode. | Truyền cờ `--permission-mode bypassPermissions --dangerously-skip-permissions` và đặt `"defaultMode": "bypassPermissions"` trong `settings.json`. |
+| **`worker-start` từ chối model Gemini** | Orca native `worker-start` chỉ lọc Claude/Codex. | Dùng `orca terminal create --command "agy --model gemini-3.7-flash-high"` để bypass. |
+
