@@ -40,4 +40,4 @@ We needed an end-to-end multi-agent orchestration platform (`Triage -> Spec -> T
 
 ## Consequences
 - **Positive**: Zero custom plugin maintenance, zero token waste on UI duplication, resilient to human drag-and-drop mistakes, 100% compliant with Matt Pocock skills and Orca ADE ecosystem.
-- **Portability**: The entire architecture is contained within `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, and `.agents/skills/orca-orchestration/` — fully portable to any new repository in 3 simple steps.
+- **Portability**: The entire architecture is contained within `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, and `skills/orca-orchestration/` — fully portable to any new repository in 3 simple steps.

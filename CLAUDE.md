@@ -10,7 +10,7 @@ This repository operates on a **100% Native Multi-Agent Architecture** in Orca A
 
 ## 2. ⚡ Core Orchestration Skill
 For the full end-to-end 6-stage lifecycle, exact CLI commands, Decision Gates, and auto-trust setup, **always activate the dedicated skill**:
-👉 **`/orca-orchestration`** *(located at `.agents/skills/orca-orchestration/SKILL.md`)*
+👉 **`/orca-orchestration`** *(located at `skills/orca-orchestration/SKILL.md`)*
 
 ---
 
@@ -40,4 +40,4 @@ For the full end-to-end 6-stage lifecycle, exact CLI commands, Decision Gates, a
 ## 5. 🛠️ Development & Testing
 - Unit tests: `npm test`
 - Domain documentation: [`CONTEXT.md`](CONTEXT.md)
-- Playbook details: [`.agents/skills/orca-orchestration/SKILL.md`](.agents/skills/orca-orchestration/SKILL.md)
+- Playbook details: [`skills/orca-orchestration/SKILL.md`](skills/orca-orchestration/SKILL.md)

@@ -135,8 +135,8 @@ echo "✅ Đã cấu hình Antigravity CLI (agy) & pre-complete onboarding"
 
 # 6. Đồng bộ bộ kỹ năng Orca Orchestration toàn cục
 mkdir -p "$USER_HOME/.agents/skills" "$USER_HOME/.claude/skills" "$USER_HOME/.claude-ide/skills"
-if [ -d ".agents/skills/orca-orchestration" ]; then
-  cp -r ".agents/skills/orca-orchestration" "$USER_HOME/.agents/skills/"
+if [ -d "skills/orca-orchestration" ]; then
+  cp -r "skills/orca-orchestration" "$USER_HOME/.agents/skills/"
   ln -sfn "$USER_HOME/.agents/skills/orca-orchestration" "$USER_HOME/.claude/skills/orca-orchestration"
   ln -sfn "$USER_HOME/.agents/skills/orca-orchestration" "$USER_HOME/.claude-ide/skills/orca-orchestration"
   echo "✅ Đã đồng bộ bộ kỹ năng /orca-orchestration vào toàn bộ các thư mục cấu hình."

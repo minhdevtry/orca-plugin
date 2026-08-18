@@ -15,7 +15,7 @@ This repository defines the **100% Native Multi-Agent Architecture** for **Orca 
 - **Decision Gates (`gate-create` & `gate-resolve`)**: Cryptographic checkpoints requiring 3-agent committee approval before unlocking PR creation.
 - **Worker Release (`worker-release`)**: Terminates worker terminals and archives execution transcripts for `worker-read`.
 
-### 2. Bộ Kỹ Năng Chuẩn Matt Pocock (`.agents/skills/`)
+### 2. Bộ Kỹ Năng Chuẩn Matt Pocock (`skills/`)
 - **Triage & Spec**: `/triage`, `/to-spec`, `/to-tickets`.
 - **Implementation & TDD**: `/implement`, `/tdd` (Red-Green-Refactor).
 - **Architecture & Research**: `/research`, `/domain-modeling`, `/codebase-design`.
