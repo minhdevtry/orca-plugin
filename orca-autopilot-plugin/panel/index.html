@@ -1079,52 +1079,77 @@
 
   <!-- Fleet Config Modal -->
   <div id="config-modal" class="modal-overlay hidden">
-    <div class="modal-panel" style="max-width: 500px;">
+    <div class="modal-panel" style="max-width: 520px;">
       <div class="modal-header-row">
         <h3>⚙️ Orca Fleet Agent & Model Configuration</h3>
         <button id="config-close-btn" class="close-btn">&times;</button>
       </div>
       <div class="modal-form">
-        <div class="field-label">Triage Agent & Model (needs-triage)</div>
+        <!-- Triage -->
+        <div class="field-label">Triage Agent & Provider Model (needs-triage)</div>
         <div style="display:flex;gap:6px;">
-          <select id="cfg-triage-agent" style="width:140px;">
-            <option value="claude" selected>claude</option>
-            <option value="antigravity">antigravity</option>
-            <option value="gemini">gemini</option>
-            <option value="codex">codex</option>
-            <option value="dsh">dsh</option>
+          <select id="cfg-triage-agent" style="width:130px;">
+            <option value="claude" selected>Claude (Anthropic)</option>
+            <option value="antigravity">Antigravity (Google)</option>
+            <option value="gemini">Gemini CLI</option>
+            <option value="codex">Codex (OpenAI)</option>
+            <option value="dsh">DeepSeek (DSH)</option>
+            <option value="grok">Grok (xAI)</option>
           </select>
-          <input type="text" id="cfg-triage-model" value="claude-3-7-sonnet-20250219" placeholder="Model ID" style="flex:1;">
+          <select id="cfg-triage-model" style="flex:1;">
+            <!-- Populated dynamically based on chosen agent -->
+          </select>
         </div>
 
-        <div class="field-label">Information Gathering Agent (needs-info)</div>
+        <!-- Info Gathering -->
+        <div class="field-label">Information Gathering Agent & Model (needs-info)</div>
         <div style="display:flex;gap:6px;">
-          <select id="cfg-info-agent" style="width:140px;">
-            <option value="antigravity" selected>antigravity</option>
-            <option value="gemini">gemini</option>
-            <option value="claude">claude</option>
-            <option value="codex">codex</option>
+          <select id="cfg-info-agent" style="width:130px;">
+            <option value="antigravity" selected>Antigravity (Google)</option>
+            <option value="gemini">Gemini CLI</option>
+            <option value="claude">Claude (Anthropic)</option>
+            <option value="codex">Codex (OpenAI)</option>
+            <option value="dsh">DeepSeek (DSH)</option>
           </select>
-          <input type="text" id="cfg-info-model" value="gemini-2.5-flash-thinking" placeholder="Model ID" style="flex:1;">
+          <select id="cfg-info-model" style="flex:1;">
+            <!-- Populated dynamically -->
+          </select>
         </div>
 
-        <div class="field-label">Lead Coder Agent (in-progress)</div>
+        <!-- Lead Coder -->
+        <div class="field-label">Lead Coder Agent & Model (in-progress)</div>
         <div style="display:flex;gap:6px;">
-          <select id="cfg-code-agent" style="width:140px;">
-            <option value="claude" selected>claude</option>
-            <option value="codex">codex</option>
-            <option value="opencode">opencode</option>
-            <option value="dsh">dsh</option>
+          <select id="cfg-code-agent" style="width:130px;">
+            <option value="claude" selected>Claude (Anthropic)</option>
+            <option value="codex">Codex (OpenAI)</option>
+            <option value="opencode">OpenCode Agent</option>
+            <option value="dsh">DeepSeek (DSH)</option>
+            <option value="pi">Pi Agent</option>
           </select>
-          <input type="text" id="cfg-code-model" value="claude-3-7-sonnet-20250219" placeholder="Model ID" style="flex:1;">
+          <select id="cfg-code-model" style="flex:1;">
+            <!-- Populated dynamically -->
+          </select>
         </div>
 
+        <!-- Research Subagent -->
         <div class="field-label">Research Subagent Model (Orca Provider)</div>
-        <input type="text" id="cfg-research-model" value="gemini-2.5-flash" placeholder="e.g. gemini-2.5-flash">
+        <select id="cfg-research-model">
+          <option value="gemini-2.5-flash" selected>Google Gemini 2.5 Flash (Fast Research - Recommended)</option>
+          <option value="claude-3-5-haiku-20241022">Anthropic Claude 3.5 Haiku</option>
+          <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
+          <option value="deepseek-chat">DeepSeek V3</option>
+        </select>
 
+        <!-- Bulk Boilerplate Subagent -->
         <div class="field-label">Bulk Token / Boilerplate Subagent Model</div>
-        <input type="text" id="cfg-bulk-model" value="minimax-m3" placeholder="e.g. minimax-m3, deepseek-chat">
+        <select id="cfg-bulk-model">
+          <option value="minimax-m3" selected>MiniMax-M3 (High Token Budget - Recommended)</option>
+          <option value="deepseek-chat">DeepSeek V3 (Cost Efficient)</option>
+          <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
+          <option value="abab6.5s-chat">MiniMax abab6.5s</option>
+        </select>
 
+        <!-- Review Rounds -->
         <div class="field-label">Max Review Rounds ($need_review_time)</div>
         <input type="number" id="cfg-review-rounds" value="1" min="1" max="5">
       </div>
@@ -1134,6 +1159,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- Toast -->
   <div id="toast-el" class="orca-toast hidden"></div>
@@ -1302,6 +1328,27 @@ function initListeners() {
     saveFleetConfig()
   })
 
+  var triageAgentEl = document.getElementById('cfg-triage-agent')
+  var infoAgentEl = document.getElementById('cfg-info-agent')
+  var codeAgentEl = document.getElementById('cfg-code-agent')
+
+  if (triageAgentEl) {
+    triageAgentEl.addEventListener('change', function () {
+      updateModelSelect('cfg-triage-agent', 'cfg-triage-model')
+    })
+  }
+  if (infoAgentEl) {
+    infoAgentEl.addEventListener('change', function () {
+      updateModelSelect('cfg-info-agent', 'cfg-info-model')
+    })
+  }
+  if (codeAgentEl) {
+    codeAgentEl.addEventListener('change', function () {
+      updateModelSelect('cfg-code-agent', 'cfg-code-model')
+    })
+  }
+
+
   modalSubmitBtn.addEventListener('click', function () {
     var title = document.getElementById('task-title-input').value.trim()
     var spec = document.getElementById('task-spec-input').value.trim()
@@ -1438,33 +1485,124 @@ function appendTaskLog(task, msg) {
   persistTasks()
 }
 
+var ORCA_PROVIDER_MODELS = {
+  claude: [
+    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet (Hybrid Reasoning - Default)' },
+    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Coding Specialist)' },
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast & Light)' },
+    { id: 'claude-opus-4', name: 'Claude Opus 4 (Deep Reasoning)' }
+  ],
+  antigravity: [
+    { id: 'gemini-2.5-flash-thinking', name: 'Gemini 2.5 Flash Thinking (Reasoning - Default)' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Deep Architecture)' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Ultra Fast)' }
+  ],
+  gemini: [
+    { id: 'gemini-2.5-flash-thinking', name: 'Gemini 2.5 Flash Thinking (Default)' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+  ],
+  codex: [
+    { id: 'gpt-4o', name: 'GPT-4o (Omni Intelligence - Default)' },
+    { id: 'o3-mini', name: 'o3-mini (High-Speed Reasoning)' },
+    { id: 'o1', name: 'o1 (Deep Reasoning)' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast)' }
+  ],
+  dsh: [
+    { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner - Default)' },
+    { id: 'deepseek-chat', name: 'DeepSeek V3 (Fast Coder)' }
+  ],
+  opencode: [
+    { id: 'qwen-2.5-coder-32b', name: 'Qwen 2.5 Coder 32B (Default)' },
+    { id: 'deepseek-chat', name: 'DeepSeek V3' }
+  ],
+  pi: [
+    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet (Default)' },
+    { id: 'gemini-2.5-flash-thinking', name: 'Gemini 2.5 Flash Thinking' }
+  ],
+  grok: [
+    { id: 'grok-2', name: 'Grok 2 (xAI - Default)' },
+    { id: 'grok-3', name: 'Grok 3 (xAI Reasoning)' }
+  ]
+}
+
+function updateModelSelect(agentSelectId, modelSelectId, selectedModelId) {
+  var agentEl = document.getElementById(agentSelectId)
+  var modelEl = document.getElementById(modelSelectId)
+  if (!agentEl || !modelEl) return
+
+  var agentKey = agentEl.value || 'claude'
+  var models = ORCA_PROVIDER_MODELS[agentKey] || [
+    { id: selectedModelId || 'default-model', name: selectedModelId || 'Default Model' }
+  ]
+
+  modelEl.innerHTML = ''
+  var matched = false
+  models.forEach(function (m) {
+    var opt = document.createElement('option')
+    opt.value = m.id
+    opt.textContent = m.name
+    if (selectedModelId && m.id === selectedModelId) {
+      opt.selected = true
+      matched = true
+    }
+    modelEl.appendChild(opt)
+  })
+
+  if (!matched && models.length > 0) {
+    modelEl.selectedIndex = 0
+  }
+}
+
 async function loadFleetConfig() {
+  var triageAgent = 'claude'
+  var triageModel = 'claude-3-7-sonnet-20250219'
+  var infoAgent = 'antigravity'
+  var infoModel = 'gemini-2.5-flash-thinking'
+  var codeAgent = 'claude'
+  var codeModel = 'claude-3-7-sonnet-20250219'
+  var researchModel = 'gemini-2.5-flash'
+  var bulkModel = 'minimax-m3'
+  var needReviewTime = 1
 
   var res = await callHost('storage.get', { key: 'autopilot_config' })
   if (res && res.ok && res.data && res.data.value) {
     var cfg = res.data.value
-    if (cfg.triageAgent) document.getElementById('cfg-triage-agent').value = cfg.triageAgent
-    if (cfg.triageModel) document.getElementById('cfg-triage-model').value = cfg.triageModel
-    if (cfg.infoAgent) document.getElementById('cfg-info-agent').value = cfg.infoAgent
-    if (cfg.infoModel) document.getElementById('cfg-info-model').value = cfg.infoModel
-    if (cfg.codeAgent) document.getElementById('cfg-code-agent').value = cfg.codeAgent
-    if (cfg.codeModel) document.getElementById('cfg-code-model').value = cfg.codeModel
-    if (cfg.researchModel) document.getElementById('cfg-research-model').value = cfg.researchModel
-    if (cfg.bulkModel) document.getElementById('cfg-bulk-model').value = cfg.bulkModel
-    if (cfg.needReviewTime) document.getElementById('cfg-review-rounds').value = cfg.needReviewTime
+    if (cfg.triageAgent) triageAgent = cfg.triageAgent
+    if (cfg.triageModel) triageModel = cfg.triageModel
+    if (cfg.infoAgent) infoAgent = cfg.infoAgent
+    if (cfg.infoModel) infoModel = cfg.infoModel
+    if (cfg.codeAgent) codeAgent = cfg.codeAgent
+    if (cfg.codeModel) codeModel = cfg.codeModel
+    if (cfg.researchModel) researchModel = cfg.researchModel
+    if (cfg.bulkModel) bulkModel = cfg.bulkModel
+    if (cfg.needReviewTime) needReviewTime = cfg.needReviewTime
   }
+
+  document.getElementById('cfg-triage-agent').value = triageAgent
+  updateModelSelect('cfg-triage-agent', 'cfg-triage-model', triageModel)
+
+  document.getElementById('cfg-info-agent').value = infoAgent
+  updateModelSelect('cfg-info-agent', 'cfg-info-model', infoModel)
+
+  document.getElementById('cfg-code-agent').value = codeAgent
+  updateModelSelect('cfg-code-agent', 'cfg-code-model', codeModel)
+
+  document.getElementById('cfg-research-model').value = researchModel
+  document.getElementById('cfg-bulk-model').value = bulkModel
+  document.getElementById('cfg-review-rounds').value = needReviewTime
 }
 
 async function saveFleetConfig() {
   var cfg = {
     triageAgent: document.getElementById('cfg-triage-agent').value,
-    triageModel: document.getElementById('cfg-triage-model').value.trim(),
+    triageModel: document.getElementById('cfg-triage-model').value,
     infoAgent: document.getElementById('cfg-info-agent').value,
-    infoModel: document.getElementById('cfg-info-model').value.trim(),
+    infoModel: document.getElementById('cfg-info-model').value,
     codeAgent: document.getElementById('cfg-code-agent').value,
-    codeModel: document.getElementById('cfg-code-model').value.trim(),
-    researchModel: document.getElementById('cfg-research-model').value.trim(),
-    bulkModel: document.getElementById('cfg-bulk-model').value.trim(),
+    codeModel: document.getElementById('cfg-code-model').value,
+    researchModel: document.getElementById('cfg-research-model').value,
+    bulkModel: document.getElementById('cfg-bulk-model').value,
     needReviewTime: parseInt(document.getElementById('cfg-review-rounds').value, 10) || 1
   }
 
@@ -1472,6 +1610,7 @@ async function saveFleetConfig() {
   configModal.classList.add('hidden')
   showToast('✅ Saved Orca Fleet Agent & Model Configuration!')
 }
+
 
 async function loadWorkspaceContext() {
   var res = await callHost('workspace.readContext', {})
