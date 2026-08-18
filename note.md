@@ -168,26 +168,26 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 Đã hoàn thành các vòng phỏng vấn kiến trúc (Grill-Me) và chốt toàn bộ các quyết định thiết kế:
 
 ### 🔹 Vòng 1: Kiến trúc Cốt lõi (Core Architecture)
-| STT | Trục Quyết định | Quyết định Thống nhất | Lý do & Khảo sát Thực tế từ Codebase Orca |
+| STT | Trục Quyết định | Quyết định Thống nhất | Đối chiếu Thực tế với Codebase Orca (`ref/orca`) |
 | :--- | :--- | :--- | :--- |
-| **1** | **Nguồn nạp Task** | Tận dụng cơ chế Task & Workspace của Orca + `gh` / `glab` CLI | Orca đã tự nhận diện repository và remote của workspace hiện tại. Không cần viết lại module đọc task từ đầu. |
-| **2** | **Mức độ Tự hành** | **Tự động 100% (Full Autonomous)** | Khi task vào `ready-for-agent` (hoặc kéo vào `in-progress`), orchestrator tự động mở Git Worktree, code `/implement + /tdd`, review `/code-review`, và mở PR mà không bắt người dùng bấm thủ công từng bước. |
-| **3** | **Xử lý Lỗi / Kẹt** | **Vòng lặp tự sửa tối đa 3 lần (`Self-healing <= 3`)** | Agent tự sửa test/review tối đa 3 vòng. Nếu vẫn fail, tự dán nhãn `needs-info` hoặc `ready-for-human`, pause task và bắn notification báo động cho dev. |
-| **4** | **Động cơ Agent** | **Agent mặc định của Orca (Claude Code / DSH)**, hỗ trợ đổi per-task | Linh hoạt tận dụng các model mạnh nhất được cấu hình trong Orca. |
-| **5** | **Hệ thống Thông báo** | **Orca Native Desktop + Orca Mobile** (Không cần Webhook ngoài) | Soi mã nguồn `ref/orca/src/main/runtime/orca-runtime.ts` (L14202-L14224): Hàm `dispatchPluginNotification` (`notifications.show`) **tự động bắn notification sang cả Desktop và app Orca Mobile** qua QR Pairing. |
+| **1** | **Nguồn nạp Task** | Tận dụng cơ chế Task & Workspace của Orca + `gh` / `glab` CLI | Orca có sẵn GitHub Client (`src/main/github/client.ts`) dùng `ghExecFileAsync` và Linear Client (`src/main/linear/client.ts`). Plugin đọc qua `workspace.readContext`. |
+| **2** | **Mức độ Tự hành** | **Tự động 100% (Full Autonomous)** | Orca hỗ trợ CLI `orca worktree create --agent <type> --prompt <text>` để tự động sinh workspace và kích hoạt agent ngầm. |
+| **3** | **Xử lý Lỗi / Kẹt** | **Vòng lặp tự sửa tối đa 3 lần (`Self-healing <= 3`)** | Điều phối bởi `pipeline-orchestrator.mjs` kết hợp với nhãn `needs-info` của Matt Pocock skills. |
+| **4** | **Động cơ Agent** | **Agent mặc định của Orca (Claude Code / DSH)**, hỗ trợ đổi per-task | Orca quản lý danh mục agent catalog (`src/renderer/src/lib/agent-catalog.ts`), hỗ trợ `claude`, `codex`, `pi`, `dsh`. |
+| **5** | **Hệ thống Thông báo** | **Orca Native Desktop + Orca Mobile** (Không cần Webhook ngoài) | Soi mã nguồn `src/main/runtime/orca-runtime.ts` (L14202-L14224): `dispatchPluginNotification` (`notifications.show`) **tự động bắn notification sang cả Desktop và app Orca Mobile** qua QR Pairing. |
 
 ### 🔹 Vòng 2: Trải nghiệm Tương tác & Vận hành Worktree (Worktree & Interaction UX)
-| STT | Trục Quyết định | Quyết định Thống nhất | Chi tiết Triển khai |
+| STT | Trục Quyết định | Quyết định Thống nhất | Đối chiếu Thực tế với Codebase Orca (`ref/orca`) |
 | :--- | :--- | :--- | :--- |
-| **6** | **Quản lý Git Worktree** | **Theo chuẩn 100% của Orca Worktrees** | Tận dụng lệnh gốc `orca worktree create --issue <id> --name <name> --agent <agent>` để gắn kết trực tiếp vào sidebar và terminal của Orca. |
+| **6** | **Quản lý Git Worktree** | **Theo chuẩn 100% của Orca Worktrees** | Tận dụng lệnh gốc `orca worktree create --issue <id> --name <name> --agent <agent>` để gắn kết trực tiếp vào sidebar và terminal của Orca (`src/main/git/worktree.ts`). |
 | **7** | **Truyền ngữ cảnh (Handoff)** | **Orca Orchestration Prompt Bridge** | Chuyển tiếp Spec và checklist Tracer-bullets qua prompt khởi tạo của Coder Agent trong Worktree. |
 | **8** | **Trải nghiệm Review & Diff** | **Tận dụng Trình xem Diff tích hợp của Orca** | Bấm vào thẻ ở cột `ready-for-human` sẽ mở trực tiếp Diff Viewer (`orca file open-changed --mode diff`) của Orca. |
-| **9** | **Giám sát Agent thời gian thực** | **Click-to-Focus Live Worktree & Terminal** | Bấm vào bất kỳ thẻ nào đang chạy trong `in-progress` sẽ chuyển focus ngay lập tức sang tab Worktree và Terminal đang stream của Agent đó. |
+| **9** | **Giám sát Agent thời gian thực** | **Click-to-Focus Live Worktree & Terminal** | Bấm vào bất kỳ thẻ nào đang chạy trong `in-progress` sẽ chuyển focus ngay lập tức sang tab Worktree và Terminal đang stream của Agent đó (`src/renderer/src/components/dashboard-popout/AgentKanbanCard.tsx`). |
 
 ### 🔹 Vòng 3: Khả năng Mở rộng, Xung đột & Giám sát (Concurrency, Conflicts & Telemetry)
-| STT | Trục Quyết định | Quyết định Thống nhất | Chi tiết Triển khai |
+| STT | Trục Quyết định | Quyết định Thống nhất | Đối chiếu Thực tế với Codebase Orca (`ref/orca`) |
 | :--- | :--- | :--- | :--- |
-| **10** | **Chạy song song (Concurrency)** | **Song song không giới hạn (Unlimited Parallel)** | Mọi task rơi vào `ready-for-agent` đều được tạo riêng Git Worktree và kích hoạt Agent chạy đồng thời. |
-| **11** | **Xử lý xung đột (Merge Conflicts)** | **Tự động kích hoạt `/resolving-merge-conflicts`** | Khi có nhánh vừa merge vào `main`, các nhánh Agent khác tự động rebase `origin/main` và áp dụng skill giải quyết xung đột; chỉ gọi dev khi quá phức tạp. |
-| **12** | **Rào chắn chạy lặp (Guardrails)** | **Không giới hạn bước (No Arbitrary Limit)** | Cho phép Agent tự do suy nghĩ sâu và chạy đủ các lượt cần thiết để giải quyết triệt để vấn đề mà không bị ngắt quãng giữa chừng. |
+| **10** | **Chạy song song (Concurrency)** | **Song song không giới hạn (Unlimited Parallel)** | Orca hỗ trợ đa Worktrees song song, mỗi worktree có PTY và terminal session tách biệt (`src/main/runtime/terminal-manager.ts`). |
+| **11** | **Xử lý xung đột (Merge Conflicts)** | **Tự động kích hoạt `/resolving-merge-conflicts`** | Kết hợp phát hiện conflict từ `src/main/github/conflict-summary.ts` và tự động rebase `origin/main` qua skill `.agents/skills/resolving-merge-conflicts/`. |
+| **12** | **Rào chắn chạy lặp (Guardrails)** | **Không giới hạn bước (No Arbitrary Limit)** | Để Agent chạy tự do hoàn thành bài toán. |
 | **13** | **Lưu vết & Báo cáo (Audit Trail)** | **Lưu JSONL (`.agents/logs/`) + Tóm tắt vào PR** | Ghi log JSONL chi tiết từng bước/tool-call để replay khi cần; tự động sinh bản tóm tắt thay đổi và kết quả test chèn vào mô tả Pull Request. |
