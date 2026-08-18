@@ -127,55 +127,95 @@ export async function fetchGitLabIssues(cwd = process.cwd()) {
 }
 
 /**
- * Fetch Local Markdown issues from `.scratch/<feature>/issues/*.md`
+ * Fetch Local Markdown issues from `.issues/`, `.agents/issues/`, `docs/issues/`, or `.scratch/<feature>/issues/*.md`
  */
 export async function fetchLocalMarkdownIssues(cwd = process.cwd()) {
-  const scratchDir = join(cwd, '.scratch')
-  if (!existsSync(scratchDir)) return []
+  const possiblePaths = [
+    join(cwd, '.issues'),
+    join(cwd, '.agents', 'issues'),
+    join(cwd, 'docs', 'issues'),
+    join(cwd, 'issues')
+  ]
 
   const issues = []
-  try {
-    const features = await readdir(scratchDir, { withFileTypes: true })
-    for (const feat of features) {
-      if (!feat.isDirectory()) continue
-      const issuesPath = join(scratchDir, feat.name, 'issues')
-      if (!existsSync(issuesPath)) continue
 
-      const files = await readdir(issuesPath)
-      for (const file of files) {
-        if (!file.endsWith('.md')) continue
-        const fullPath = join(issuesPath, file)
-        const content = await readFile(fullPath, 'utf8')
-        
-        // Parse Title & Status from local markdown template
-        const titleMatch = content.match(/^#\s+(.+)$/m)
-        const statusMatch = content.match(/\*\*Status:\*\*\s*([^\n\r]+)/i)
-        const blockedMatch = content.match(/\*\*Blocked by:\*\*\s*([^\n\r]+)/i)
+  // 1. Direct issue directories
+  for (const dir of possiblePaths) {
+    if (existsSync(dir)) {
+      try {
+        const files = await readdir(dir)
+        for (const file of files) {
+          if (!file.endsWith('.md')) continue
+          const fullPath = join(dir, file)
+          const content = await readFile(fullPath, 'utf8')
+          const titleMatch = content.match(/^#\s+(.+)$/m)
+          const statusMatch = content.match(/\*\*Status:\*\*\s*([^\n\r]+)/i) || content.match(/status:\s*([^\n\r]+)/i)
+          const blockedMatch = content.match(/\*\*Blocked by:\*\*\s*([^\n\r]+)/i)
 
-        const title = titleMatch ? titleMatch[1].trim() : file.replace('.md', '')
-        const status = statusMatch ? statusMatch[1].trim().toLowerCase() : 'ready-for-agent'
-        const blockedBy = blockedMatch ? blockedMatch[1].trim() : null
+          const title = titleMatch ? titleMatch[1].trim() : file.replace('.md', '')
+          const status = statusMatch ? statusMatch[1].trim().toLowerCase() : 'needs-triage'
+          const num = file.replace(/\D/g, '') || String(issues.length + 1)
 
-        issues.push({
-          id: `local-${feat.name}-${file}`,
-          source: 'local',
-          number: file.replace(/\D/g, '') || '0',
-          title,
-          body: content,
-          labels: [status],
-          blockedBy,
-          column: determineKanbanColumn([status]),
-          filePath: fullPath,
-          feature: feat.name,
-          updatedAt: new Date().toISOString()
-        })
-      }
+          issues.push({
+            id: `local-${basename(dir)}-${file}`,
+            source: 'local',
+            number: num,
+            title,
+            body: content,
+            labels: [status],
+            blockedBy: blockedMatch ? blockedMatch[1].trim() : null,
+            column: determineKanbanColumn([status]),
+            filePath: fullPath,
+            updatedAt: new Date().toISOString()
+          })
+        }
+      } catch (e) {}
     }
-  } catch (e) {
-    // Ignore read errors
   }
+
+  // 2. Scratch feature directories (.scratch/<feature>/issues/*.md)
+  const scratchDir = join(cwd, '.scratch')
+  if (existsSync(scratchDir)) {
+    try {
+      const features = await readdir(scratchDir, { withFileTypes: true })
+      for (const feat of features) {
+        if (!feat.isDirectory()) continue
+        const issuesPath = join(scratchDir, feat.name, 'issues')
+        if (!existsSync(issuesPath)) continue
+
+        const files = await readdir(issuesPath)
+        for (const file of files) {
+          if (!file.endsWith('.md')) continue
+          const fullPath = join(issuesPath, file)
+          const content = await readFile(fullPath, 'utf8')
+          const titleMatch = content.match(/^#\s+(.+)$/m)
+          const statusMatch = content.match(/\*\*Status:\*\*\s*([^\n\r]+)/i)
+          const blockedMatch = content.match(/\*\*Blocked by:\*\*\s*([^\n\r]+)/i)
+
+          const title = titleMatch ? titleMatch[1].trim() : file.replace('.md', '')
+          const status = statusMatch ? statusMatch[1].trim().toLowerCase() : 'ready-for-agent'
+
+          issues.push({
+            id: `local-${feat.name}-${file}`,
+            source: 'local',
+            number: file.replace(/\D/g, '') || String(issues.length + 1),
+            title,
+            body: content,
+            labels: [status],
+            blockedBy: blockedMatch ? blockedMatch[1].trim() : null,
+            column: determineKanbanColumn([status]),
+            filePath: fullPath,
+            feature: feat.name,
+            updatedAt: new Date().toISOString()
+          })
+        }
+      }
+    } catch (e) {}
+  }
+
   return issues
 }
+
 
 /**
  * Update status label on GitHub/GitLab or Local file

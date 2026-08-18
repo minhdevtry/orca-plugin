@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { determineKanbanColumn, STATUS_LABELS } from '../lib/github-gitlab-adapter.mjs'
+import { determineKanbanColumn, STATUS_LABELS, fetchLocalMarkdownIssues } from '../lib/github-gitlab-adapter.mjs'
 import { PipelineOrchestrator, PIPELINE_STAGES, AGENT_MATRIX, MAX_SELF_HEALING_ATTEMPTS, loadAutopilotConfig } from '../lib/pipeline-orchestrator.mjs'
+
 
 
 test('determineKanbanColumn maps Matt Pocock labels directly to 7 canonical lanes', () => {
@@ -140,5 +141,16 @@ test('discoverInstalledOrcaAgents leverages Orca canonical catalog and PATH dete
   assert.ok(optimal.agent)
   assert.ok(optimal.model)
 })
+
+test('fetchLocalMarkdownIssues loads real issues from repository .issues/ directory', async () => {
+  const rootDir = '/home/minhdn3/Documents/orca-dhs'
+  const realIssues = await fetchLocalMarkdownIssues(rootDir)
+  assert.ok(Array.isArray(realIssues))
+  assert.ok(realIssues.length >= 6)
+  assert.ok(realIssues.some(i => i.title.includes('Kanban')))
+  assert.ok(realIssues.some(i => i.column === 'review'))
+  assert.ok(realIssues.some(i => i.column === 'ready-for-human'))
+})
+
 
 

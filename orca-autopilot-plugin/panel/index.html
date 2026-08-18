@@ -1261,111 +1261,34 @@ async function loadWorkspaceContext() {
 }
 
 async function loadTasks() {
-  var res = await callHost('storage.get', { key: 'orca_mattpocock_kanban_tasks' })
-  if (res && res.ok && res.data && res.data.value && Array.isArray(res.data.value)) {
-    tasks = res.data.value
+  // 1. Try to fetch real issues from Orca plugin RPC (GitHub, GitLab, and .issues/)
+  try {
+    var res = await callHost('autopilot.getIssues', {})
+    if (res && res.ok && res.data && Array.isArray(res.data.issues) && res.data.issues.length > 0) {
+      tasks = res.data.issues
+      persistTasks()
+      renderBoard()
+      return
+    }
+  } catch (e) {}
+
+  // 2. Check saved tasks in Orca host storage
+  var storRes = await callHost('storage.get', { key: 'orca_mattpocock_kanban_tasks' })
+  if (storRes && storRes.ok && storRes.data && storRes.data.value && Array.isArray(storRes.data.value)) {
+    tasks = storRes.data.value
     renderBoard()
     return
   }
 
-  // Canonical Matt Pocock Skills Initial Tasks (7 Columns)
-  tasks = [
-    {
-      id: 'task-1',
-      source: 'local',
-      number: 1,
-      title: 'Triage issue: Hỗ trợ xác thực người dùng đa phiên',
-      body: 'Phân loại ban đầu bằng /triage và sinh spec.md',
-      labels: ['needs-triage'],
-      column: 'needs-triage',
-      assignee: 'Claude 3.7',
-      logs: ['[11:00:00] Issue #1 được nạp vào cột needs-triage.'],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'task-2',
-      source: 'local',
-      number: 2,
-      title: 'Cần bổ sung schema cơ sở dữ liệu cho Session Store',
-      body: 'Thiếu định dạng bảng, đang chạy /research để đối chiếu 2 giả thuyết',
-      labels: ['needs-info'],
-      column: 'needs-info',
-      assignee: 'Antigravity / Gemini',
-      logs: ['[11:05:00] Kích hoạt giả thuyết Pro vs Con.'],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'task-3',
-      source: 'local',
-      number: 3,
-      title: 'Lập trình tính năng Refresh Token Rotation',
-      body: 'Spec đã hoàn chỉnh (/to-spec), sẵn sàng để Coder Agent chạy',
-      labels: ['ready-for-agent'],
-      column: 'ready-for-agent',
-      assignee: 'Claude 3.7',
-      logs: ['[11:10:00] Spec.md đã được duyệt.'],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'task-4',
-      source: 'local',
-      number: 4,
-      title: 'Triển khai TDD cho JWT Middleware trong Git Worktree',
-      body: 'Agent đang viết test và code theo /implement và /tdd',
-      labels: ['in-progress'],
-      column: 'in-progress',
-      worktree: 'agent/task-4',
-      assignee: 'Claude 3.7 + Fleet',
-      logs: ['[11:15:00] Đã tạo Git Worktree [agent/task-4]', '[11:15:05] Đang chạy /implement + /tdd'],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'task-5',
-      source: 'local',
-      number: 5,
-      title: 'Hội đồng 3 Agent Thẩm Định Diff: Token Expiration Fix',
-      body: 'MiniMax quét code style, Antigravity thẩm định feedback & kiến trúc',
-      labels: ['review'],
-      column: 'review',
-      worktree: 'agent/task-5',
-      assignee: 'Hội Đồng 3 Agent',
-      logs: ['[11:20:00] Bắt đầu phiên thẩm định của Hội đồng 3 Agent.', '[11:20:05] MiniMax-M3: Quét cú pháp sạch.', '[11:20:08] Antigravity: Đã verify không xung đột kiến trúc.'],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'task-6',
-      source: 'local',
-      number: 6,
-      title: 'Duyệt PR #42: Đã vượt qua Tripartite Review',
-      body: 'Coder và Reviewer Agent đã xong, chờ con người quyết định merge',
-      labels: ['ready-for-human'],
-      column: 'ready-for-human',
-      worktree: 'agent/task-6',
-      assignee: 'Human Dev',
-      logs: ['[11:22:00] Pull Request mở thành công. Chờ duyệt merge.'],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'task-7',
-      source: 'local',
-      number: 7,
-      title: 'Đồng bộ bộ kỹ năng mattpocock/skills (35 skills)',
-      body: 'Đã hoàn tất đồng bộ zero-fork',
-      labels: ['done'],
-      column: 'done',
-      assignee: 'System',
-      logs: ['[11:25:00] Hoàn tất 100%'],
-      updatedAt: new Date().toISOString()
-    }
-  ]
-
-  persistTasks()
+  // 3. No fake mock tasks - render real empty state
+  tasks = []
   renderBoard()
 }
 
 function persistTasks() {
   callHost('storage.set', { key: 'orca_mattpocock_kanban_tasks', value: tasks })
 }
+
 
 function renderBoard() {
   Object.values(laneContainers).forEach(function (el) { if (el) el.innerHTML = '' })
