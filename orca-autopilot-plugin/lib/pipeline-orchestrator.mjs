@@ -92,9 +92,33 @@ export const MATT_POCOCK_SKILL_PROMPTS = {
 export const MAX_SELF_HEALING_ATTEMPTS = 3
 
 /**
+ * Resolves safe Orca CLI executable without ever launching GNOME /usr/bin/orca Screen Reader on Linux
+ */
+export async function resolveOrcaBinary() {
+  if (process.env.ORCA_CLI_COMMAND) return process.env.ORCA_CLI_COMMAND
+  if (process.env.NODE_ENV === 'test') return null
+
+  // 1. Try orca-ide on PATH
+  try {
+    const { stdout } = await execFileAsync('which', ['orca-ide'])
+    if (stdout.trim()) return stdout.trim()
+  } catch (e) {}
+
+  // 2. Try default user local install path
+  const defaultLinuxPath = join(process.env.HOME || '', '.local/share/orca/app/orca-ide')
+  if (existsSync(defaultLinuxPath)) return defaultLinuxPath
+
+  // 3. Inside Orca managed terminal
+  if (process.env.ORCA_TERMINAL_ID) return 'orca'
+
+  return null
+}
+
+/**
  * Dynamically loads user fleet configuration from .agents/config/autopilot.json
  */
 export async function loadAutopilotConfig(repoPath = process.cwd()) {
+
   const possiblePaths = [
     join(repoPath, '.agents', 'config', 'autopilot.json'),
     join(repoPath, '.agents', 'autopilot.json'),
@@ -305,6 +329,7 @@ export class PipelineOrchestrator {
    * Stage 3: Code & TDD Implementation in isolated Git Worktree
    */
   async runCodeStage(runState, repoPath, agentType) {
+
     runState.stage = PIPELINE_STAGES.IN_PROGRESS
     const branchName = `agent/task-${runState.issue.number || Date.now()}`
     const promptFn = typeof runState.prompts?.implement === 'function' ? runState.prompts.implement : MATT_POCOCK_SKILL_PROMPTS.implement
@@ -313,19 +338,26 @@ export class PipelineOrchestrator {
 
     await updateIssueStatus(runState.issue, 'in-progress', repoPath)
 
-    try {
-      await execFileAsync(
-        'orca',
-        ['worktree', 'create', '--name', branchName, '--agent', agentType, '--prompt', prompt, '--setup', 'run', '--json'],
-        { cwd: repoPath, timeout: 2000 }
-      )
-      runState.worktree = branchName
-      this.log(runState, `[Stage 3: Coding] Worktree [${branchName}] sẵn sàng. Đang chạy /implement + /tdd...`)
-    } catch (e) {
+    const orcaBin = await resolveOrcaBinary()
+    if (orcaBin) {
+      try {
+        await execFileAsync(
+          orcaBin,
+          ['worktree', 'create', '--name', branchName, '--agent', agentType, '--prompt', prompt, '--setup', 'run', '--json'],
+          { cwd: repoPath, timeout: 5000 }
+        )
+        runState.worktree = branchName
+        this.log(runState, `[Stage 3: Coding] Worktree [${branchName}] sẵn sàng. Đang chạy /implement + /tdd...`)
+      } catch (e) {
+        runState.worktree = branchName
+        this.log(runState, `[Stage 3: Coding] Chạy Coder Agent trong worktree môi trường...`)
+      }
+    } else {
       runState.worktree = branchName
       this.log(runState, `[Stage 3: Coding] Chạy Coder Agent trong worktree môi trường...`)
     }
   }
+
 
   /**
    * Stage 4: Tripartite Review Committee (MiniMax-M3 + Dual Antigravity)
