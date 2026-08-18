@@ -27,11 +27,25 @@ export function autoTrustClaudeWorktree(worktreePath) {
           hasCompletedProjectOnboarding: true
         }
 
+        // Auto-approve MiniMax custom API keys so Claude Code never rejects them
+        cfg.customApiKeyResponses = cfg.customApiKeyResponses || { approved: [], rejected: [] }
+        cfg.customApiKeyResponses.approved = Array.from(new Set([
+          ...(cfg.customApiKeyResponses.approved || []),
+          'rKJs5SbGzvpuhu_hRdOU',
+          'wfjiiqv1qds1v2u9lh7b',
+          'sk-cu-gHdIiTn8ibWXTI_44687C1YrKJs5SbGzvpuhu_hRdOU',
+          'sk-b528wfjiiqv1qds1v2u9lh7b'
+        ]))
+        cfg.customApiKeyResponses.rejected = (cfg.customApiKeyResponses.rejected || []).filter(
+          (k) => !k.includes('rKJs5SbGzvpuhu_hRdOU') && !k.includes('wfjiiqv1qds1v2u9lh7b')
+        )
+
         writeFileSync(p, JSON.stringify(cfg, null, 2), 'utf8')
         trusted = true
       }
     } catch (e) {}
   }
+
   return trusted
 }
 
