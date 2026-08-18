@@ -27,6 +27,15 @@
 - **In-IDE Diff Inspection**: Triggered via `orca file open-changed --mode diff`.
 - **Browser CDP Verification**: Native Chrome DevTools Protocol engine (`orca snapshot`, `orca click`, `orca eval`).
 
+## Status-Based Agent & Subagent Dispatching Matrix
+
+| Stage | Primary Agent | Model | Subagents & Delegation Strategy | Next Transition |
+| :--- | :--- | :--- | :--- | :--- |
+| **`needs-triage`** | **Claude** | Claude 3.7 Sonnet (Thinking) | Tự đọc issue + `CONTEXT.md`, spawn 3 subagents (1. Đồng thuận/Khả thi, 2. Phản biện/Rủi ro, 3. Đột phá/Mở rộng), chốt spec.md. | $\rightarrow$ `ready-for-agent` (rõ ràng), `needs-info` (thiếu dữ kiện), hoặc `wontfix` (không làm). |
+| **`needs-info`** | **Antigravity / Gemini** | Gemini 3.7 Flash (Thinking) | Chạy 2 hướng tìm kiếm (1 củng cố, 1 bác bỏ), tổng kết bổ sung câu trả lời vào issue. | $\rightarrow$ `ready-for-agent` (đủ dữ kiện) hoặc bắn thông báo mời human chốt. |
+| **`ready-for-agent` / `in-progress`** | **Claude** | Claude 3.7 Sonnet (Thinking) | Lập trình cốt lõi, TDD test suite. Khi cần: gọi **Gemini 3.7 Flash** (tra cứu nhanh), **MiniMax-M3 / DeepSeek** (tác vụ cơ bắp, bulk boilerplate). | $\rightarrow$ `/code-review` $\rightarrow$ `ready-for-human`. |
+| **`ready-for-human`** | **Human Developer** | N/A | Bắn `notifications.show` ra Desktop & Orca Mobile để dev vào click xem Diff và Merge. | $\rightarrow$ `done` (Auto cleanup Worktree). |
+
 ## Domain Vocabulary & Glossary
 
 | Term | Definition |
@@ -38,5 +47,7 @@
 | **Dual Notification** | A unified alert emitted via `notifications.show` that triggers both a native Desktop banner and an instant push notification to paired **Orca Mobile** devices. |
 | **Crash Recovery** | The deterministic recovery protocol where interrupted in-flight tasks are reset to `ready-for-agent` upon Orca restart to prevent corrupted state resumption. |
 | **Worktree Cleanup** | Automated teardown (`orca worktree remove`) and local branch deletion triggered after a Pull Request is merged. |
+
+
 
 

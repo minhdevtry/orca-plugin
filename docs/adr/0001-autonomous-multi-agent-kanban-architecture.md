@@ -72,7 +72,15 @@ Orca ADE provides an autonomous development environment with worktrees and termi
 19. **Auto-Sync Hot Reloading during Development**:
    - The plugin build pipeline supports `node scripts/install-orca-plugin.mjs --watch` to monitor file changes, recompute SHA-256 hashes, update `plugins.lock.json`, and trigger immediate live panel reloads inside Orca ADE.
 
+20. **Status-Based Agent & Subagent Dispatching Matrix**:
+   - Each Kanban status configures a dedicated primary agent and specialized subagent routing:
+     - **`needs-triage`**: **Claude (3.7 Sonnet)** reads issue, `CONTEXT.md`, spawns 3 parallel perspective subagents (Feasibility, Counter-argument, Breakthrough Expansion), generates `spec.md`, and transitions to `ready-for-agent`, `needs-info`, or `wontfix`.
+     - **`needs-info`**: **Antigravity / Gemini (3.7 Flash High)** runs dual-vector research (pro vs con), updates issue description with findings, and either self-resolves to `ready-for-agent` or alerts human.
+     - **`ready-for-agent` / `in-progress`**: **Claude (3.7 Sonnet)** for primary coding & TDD logic, delegating to **Gemini 3.7 Flash** for fast info retrieval and **MiniMax-M3 / DeepSeek** for high-token bulk boilerplate tasks.
+     - **`ready-for-human`**: Alerts human via `notifications.show` for final diff review and merge.
+
 ## Consequences
+
 - **Positive**:
   - Pure lean architecture: Zero external runtime daemon required beyond Orca ADE.
   - Zero external dependency on third-party bots (Telegram/Discord).

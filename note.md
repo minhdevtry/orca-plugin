@@ -280,3 +280,42 @@ Orca cung cấp bộ skill điều phối chính thức từ repository `https:/
 - **Báo cáo hoàn tất (Worker Report)**: `orca orchestration send --type worker_done --outcome succeeded --task-id <id> --dispatch-id <id> --json`
 - **Dọn dẹp Worker**: `orca orchestration worker-release --terminal <handle>`
 - $\rightarrow$ *Ứng dụng:* Plugin AutoPilot có thể gọi trực tiếp các lệnh native này của Orca CLI để thực hiện chuỗi phối hợp giữa Spec $\rightarrow$ Coder $\rightarrow$ Tester $\rightarrow$ Reviewer một cách chuẩn xác 100%!
+
+---
+
+## 15. Ma Trận Phân Phối Agent Đa Tầng Theo Từng Trạng Thái Kanban
+
+Cấu hình chi tiết phân công Agent chính và mạng lưới Subagents chuyên biệt theo từng làn:
+
+### 1️⃣ Làn `needs-triage` (Triage & Spec Formulation)
+- **Agent chính**: **Claude 3.7 Sonnet (Thinking)**.
+- **Quy trình thực thi**:
+  1. Đọc nội dung Issue, đối chiếu mã nguồn hiện tại và tài liệu [`CONTEXT.md`](file:///home/minhdn3/Documents/orca-dhs/CONTEXT.md).
+  2. Kích hoạt 3 Subagents điều tra 3 hướng độc lập:
+     - *Hướng 1 — Đồng thuận/Khả thi:* Đánh giá cách làm tối ưu nhất.
+     - *Hướng 2 — Phản biện/Rủi ro:* Tìm các góc khuất, nguy cơ phá vỡ hệ thống hoặc edge-cases.
+     - *Hướng 3 — Đột phá/Mở rộng:* Tìm giải pháp kiến trúc tối tân hơn.
+  3. Tổng hợp thành bản thiết kế `spec.md` và tracer-bullet slices.
+  4. Tự động chuyển trạng thái:
+     - Chuyển `ready-for-agent` nếu yêu cầu đã rõ ràng và khả thi.
+     - Chuyển `needs-info` nếu phát hiện thiếu thông tin cốt lõi.
+     - Đóng nhãn `wontfix` + tạo issue mới nếu phát hiện vấn đề thuộc phạm vi khác.
+
+### 2️⃣ Làn `needs-info` (Information Gathering & Hypothesis Testing)
+- **Agent chính**: **Antigravity / Gemini 3.7 Flash (Thinking)**.
+- **Quy trình thực thi**:
+  1. Chạy 2 hướng tìm kiếm dữ liệu song song (1 hướng củng cố giả thuyết, 1 hướng bác bỏ).
+  2. Đúc kết thông tin và tự động ghi chú kết quả giải đáp vào Issue comment.
+  3. Nếu đủ dữ kiện $\rightarrow$ tự động đẩy sang `ready-for-agent`.
+  4. Nếu vẫn cần quyết định từ con người $\rightarrow$ bắn notification mời user vào duyệt chốt.
+
+### 3️⃣ Làn `ready-for-agent` $\rightarrow$ `in-progress` (Core Coding & Subagent Specialist Pool)
+- **Agent chính (Coder Lead)**: **Claude 3.7 Sonnet (Thinking)** (chịu trách nhiệm logic cốt lõi, kiến trúc và TDD loop).
+- **Mạng lưới Subagents bổ trợ (Gọi theo nhu cầu thực tế)**:
+  - 🔍 *Tra cứu dữ liệu & Research nhanh:* **Gemini 3.7 Flash / Antigravity**.
+  - 🏋️ *Tác vụ cơ bắp / Tốn token (Bulk boilerplate, migration, test data generation):* **MiniMax-M3 / DeepSeek V3**.
+  - 🧠 *Logic phức tạp, Red-Green Refactoring:* **Claude 3.7 Sonnet**.
+
+### 4️⃣ Làn `ready-for-human` (Sign-off & Merge)
+- **Phụ trách**: **Human Developer**.
+- Bắn `notifications.show` ra Desktop & Orca Mobile để dev vào click xem Diff trực tiếp trên Orca (`orca file open-changed --mode diff`) và Merge.
