@@ -147,12 +147,30 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 
 ## 8. Kế hoạch triển khai (Implementation Roadmap)
 
-- [ ] **Giai đoạn 1: Core Orchestrator CLI (`dhs-flow` / `orca-pilot`)**
+- [x] **Giai đoạn 1: Core Orchestrator CLI & Adapter**
   - Xây dựng state-machine điều phối 4 bước: `Spec -> Code -> Review -> PR`.
-  - Kết nối `gh` / `glab` CLI với bộ nhãn `mattpocock/skills`.
-- [ ] **Giai đoạn 2: Tích hợp Worktrees & Orca Plugin**
-  - Đóng gói Orca Plugin (`orca-plugin.json` + UI Panel).
-  - Tái sử dụng `AgentKanbanBoard` của Orca làm bảng điều khiển GitHub/GitLab Issues.
-  - Tự động spawn Agent vào Worktree khi thẻ chuyển sang `In Progress`.
-- [ ] **Giai đoạn 3: Notifications & Polish**
-  - Hoàn thiện luồng Push Notification tới Mobile và Desktop khi cần Human approval hoặc khi Task hoàn tất.
+  - Kết nối `gh` / `glab` CLI với bộ nhãn chuẩn của `mattpocock/skills`.
+  - Viết unit tests đạt 100% độ bao phủ.
+- [x] **Giai đoạn 2: Tích hợp Orca Plugin & Native Kanban**
+  - Đóng gói Orca Plugin (`orca-plugin.json` + Sandboxed CSP-compliant Panel).
+  - Tái sử dụng components, layout, typography từ `AgentKanbanBoard.tsx` của Orca.
+  - Cấu hình 6 cột Kanban tương thích 100% với 5 Matt Pocock State Labels (`needs-triage`, `needs-info`, `ready-for-agent`, `in-progress`, `ready-for-human`, `done`).
+  - Hashing và đăng ký tự động vào `plugins.lock.json` và `orca-data.json`.
+- [ ] **Giai đoạn 3: Khép kín Luồng Tự hành 100% (Full Autonomous Loop)**
+  - Tự động spawn Git Worktree khi card vào `ready-for-agent`.
+  - Triển khai Self-healing loop tối đa 3 vòng khi test/review fail.
+  - Tích hợp `notifications.show` phát đồng thời tới Desktop & Orca Mobile.
+
+---
+
+## 9. Kết quả Phiên Phỏng vấn Kiến trúc (Grill-Me Decisions)
+
+Đã hoàn thành phiên phỏng vấn kiến trúc ngày 18/08/2026 với 5 quyết định cốt lõi:
+
+| STT | Trục Quyết định | Quyết định Thống nhất | Lý do & Khảo sát Thực tế từ Codebase Orca |
+| :--- | :--- | :--- | :--- |
+| **1** | **Nguồn nạp Task** | Tận dụng cơ chế Task & Workspace của Orca + `gh` / `glab` CLI | Orca đã tự nhận diện repository và remote của workspace hiện tại. Không cần viết lại module đọc task từ đầu. |
+| **2** | **Mức độ Tự hành** | **Tự động 100% (Full Autonomous)** | Khi task vào `ready-for-agent` (hoặc kéo vào `in-progress`), orchestrator tự động mở Git Worktree, code `/implement + /tdd`, review `/code-review`, và mở PR mà không bắt người dùng bấm thủ công từng bước. |
+| **3** | **Xử lý Lỗi / Kẹt** | **Vòng lặp tự sửa tối đa 3 lần (`Self-healing <= 3`)** | Agent tự sửa test/review tối đa 3 vòng. Nếu vẫn fail, tự dán nhãn `needs-info` hoặc `ready-for-human`, pause task và bắn notification báo động cho dev. |
+| **4** | **Động cơ Agent** | **Agent mặc định của Orca (Claude Code / DSH)**, hỗ trợ đổi per-task | Linh hoạt tận dụng các model mạnh nhất được cấu hình trong Orca. |
+| **5** | **Hệ thống Thông báo** | **Orca Native Desktop + Orca Mobile** (Không cần Webhook ngoài) | Soi mã nguồn `ref/orca/src/main/runtime/orca-runtime.ts` (L14202-L14224): Hàm `dispatchPluginNotification` (`notifications.show`) **tự động bắn notification sang cả Desktop và app Orca Mobile** qua QR Pairing. |
