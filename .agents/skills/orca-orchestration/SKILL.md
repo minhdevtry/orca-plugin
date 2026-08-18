@@ -56,6 +56,33 @@ Level 1: Lead Coordinator (Root workspace or Orca Scheduled Automation)
 
 ---
 
+## State Alignment & Desync Healing (Tự Động Chữa Lệch Trạng Thái)
+
+> ⚠️ **THE DESYNC HEALING RULE**:
+> If a human accidentally drags a card on the Orca UI to the wrong column, or if a terminal session's worktree status deviates from the remote issue label:
+> **The GitHub Issue Label is the authoritative source of truth.**
+
+### 🔄 Pre-Flight Reconciliation Algorithm:
+Whenever a Lead Agent or subagent terminal starts working on task `#<id>`, it MUST run this reconciliation check:
+
+```bash
+# 1. Query remote truth from GitHub:
+REMOTE_LABEL=$(gh issue view <id> --json labels -q '.labels[].name' | grep -E '^(needs-triage|needs-info|ready-for-agent|in-progress|ready-for-human)$' | head -n 1)
+
+# 2. Force-reconcile Orca Workspace Board to match remote label:
+if [ -n "$REMOTE_LABEL" ]; then
+  orca worktree set --worktree active --issue <id> --workspace-status "$REMOTE_LABEL" \
+    --comment "State-heal: aligned Orca workspace card with GitHub label [$REMOTE_LABEL]" --json
+fi
+```
+
+### 🔒 Atomic Dual-Update Invariant:
+When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute status updates as a paired atomic operation:
+1. `gh issue edit <id> --add-label "<new-status>" --remove-label "<old-status>"`
+2. `orca worktree set --worktree "<worktree-selector>" --issue <id> --workspace-status "<new-status>" --json`
+
+---
+
 ## Step-by-Step Execution Process
 
 ```
