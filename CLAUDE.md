@@ -1,4 +1,4 @@
-# Claude Code Guide for Orca Plugin
+# Agents Guide for Orca Plugin
 
 ## Project Overview
 This repository contains the **Orca AutoPilot Plugin** — an autonomous multi-agent coding platform and native Kanban board for Orca ADE.
@@ -17,3 +17,7 @@ Canonical 5 Matt Pocock triage labels (`needs-triage`, `needs-info`, `ready-for-
 
 ### Domain docs
 Single-context layout documented in `CONTEXT.md`. See `docs/agents/domain.md`.
+
+### Orchestration skill
+Orca native multi-agent coordination protocol (`stablyai/orca`). Update via `npx -y skills update orchestration --global -y`. See `docs/adr/0001-autonomous-multi-agent-kanban-architecture.md`.
+

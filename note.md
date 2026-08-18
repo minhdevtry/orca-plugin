@@ -1,4 +1,4 @@
-# Autonomous Multi-Agent Coding Platform (Orca + DSH + Matt Pocock Skills)
+# Orca AutoPilot Platform (Native Orca ADE + Matt Pocock Skills)
 
 > **Tài liệu thiết kế kiến trúc & Ghi chú kỹ thuật**  
 > Cập nhật lần cuối: 18/08/2026
@@ -41,7 +41,7 @@ graph TD
 
     Autonomous Workflow -.->|Notify: Done / Stuck / Gate| NotifyService[Notification System]
     NotifyService --> DesktopOS[Desktop Notification]
-    NotifyService --> MobileApp[Orca Mobile Companion / Webhook]
+    NotifyService --> MobileApp[Orca Mobile Companion]
 ```
 
 ### Chi tiết 4 Agents:
@@ -63,47 +63,37 @@ graph TD
 
 ---
 
-## 3. Tận dụng hạ tầng có sẵn của Orca & DSH
+## 3. Tận dụng hạ tầng có sẵn của Orca
 
-### A. Orca (`v1.4.184`)
 - **Plugin System:**
-  - Định nghĩa trong `orca-plugin.json` (hỗ trợ Webview Panels, Background Worker `main.mjs`, Event Bus).
+  - Định nghĩa trong `orca-plugin.json` (Webview Panels, Out-of-process Background Worker `main.mjs`, Event Bus).
   - Có các hook sự kiện: `worktree.created`, `agent.status.changed`, `notifications.show`.
-- **Git Worktrees:** Quản lý môi trường nhánh cô lập cực kỳ mượt mà.
+- **Git Worktrees:** Quản lý môi trường nhánh cô lập cực kỳ mượt mà (`src/main/git/worktree.ts`).
 - **Orchestration RPC Engine:**
-  - `orca orchestration run-create`: Tạo không gian điều phối.
   - `orca orchestration task-create`: Tạo task DAGs có dependencies (`--deps`).
-  - `orca orchestration worker-start`: Khởi chạy bất kỳ Agent CLI nào (`claude`, `codex`, `dsh`, `opencode`, `pi`).
-- **Mobile Companion App:** Có sẵn app iOS (TestFlight/AppStore) và Android kết nối qua Relay.
-
-### B. DeepSeek Harness (`v0.1.0-rc.7`)
-- **Cordis Plugin Framework:** `@deepseek-ai/cordis` cho phép inject custom services, lifecycle hooks và model-callable tools (`defineTool`).
-- **Subagent Engine:** `@deepseek-ai/dsh-subagent` hỗ trợ quản lý worker background không đồng bộ.
+  - `orca orchestration dispatch`: Giao task cho Agent kèm lifecycle preamble.
+  - `orca orchestration check --wait`: Chờ kết quả tập trung từ các worker.
+- **Mobile Companion App:** Ứng dụng Orca Mobile kết nối qua QR pairing, nhận thông báo đẩy tức thì.
 
 ---
 
-## 4. Tận dụng Kanban Board của Orca với Labels Matt Pocock
+## 4. Tận dụng Kanban Board của Orca với 6 Cột Matt Pocock
 
 ### A. Phát hiện quan trọng trong source Orca
 Orca **đã có sẵn hạ tầng Kanban hoàn chỉnh**:
 - `linear-board-drag-payload.ts`: Xử lý kéo thả task $\rightarrow$ mở Worktree $\rightarrow$ gán Agent.
-- `AgentKanbanBoard.tsx` & `AgentDashboardDrawer.tsx`: Giao diện Kanban phân cột sẵn:
-  - 🚨 `attention` (Needs You)
-  - ⚡ `working` (Working)
-  - 💤 `idle` (Ready / Backlog)
-  - ✅ `done` (Done)
+- `AgentKanbanBoard.tsx` & `AgentDashboardDrawer.tsx`: Giao diện Kanban tối ưu với Design Tokens chuẩn.
 
-### B. Ánh xạ Labels của Matt Pocock vào Cột Kanban
+### B. Ánh xạ 6 Cột Kanban Chuẩn Matt Pocock
 
-Thay vì phụ thuộc Linear trả phí, ta dùng **GitHub / GitLab Issue Labels** (và local `.scratch/issues/*.md`):
-
-| Cột Kanban Orca | Label Matt Pocock / State | Hành vi kích hoạt Agent |
-| :--- | :--- | :--- |
-| **📥 Backlog / Triage** | `needs-triage`, `needs-info` | Chờ User duyệt hoặc chạy Agent 1 (`/triage`) để làm rõ yêu cầu |
-| **🤖 Ready for Agent** | `ready-for-agent` | Đã có brief/spec chuẩn. Kéo thả vào đây để xếp hàng chờ bốc |
-| **⚡ In Progress** | `in-progress` / `status:in-progress` | **Tự động:** Tạo Worktree $\rightarrow$ chạy `worker-start` cho Coder Agent (`/implement`) |
-| **🔍 In Review / QA** | `in-review` / `ready-for-human` | **Tự động:** Coder xong $\rightarrow$ Reviewer Agent chạy `/code-review`, mở PR |
-| **✅ Done** | `done` / `closed` | PR được merge $\rightarrow$ Issue đóng, dọn dẹp Worktree |
+| STT | Cột Kanban Orca | Label Matt Pocock / State | Hành vi Tự Hành |
+| :--- | :--- | :--- | :--- |
+| **1** | **📥 Needs Triage** | `needs-triage` | Task mới tạo, chờ phân loại hoặc kích hoạt Spec Agent (`/to-spec`). |
+| **2** | **❓ Needs Info** | `needs-info` | Bị kẹt / thiếu thông tin / vượt quá 3 lần self-healing $\rightarrow$ Cần dev phản hồi. |
+| **3** | **🤖 Ready for Agent** | `ready-for-agent` | Yêu cầu đã rõ. **Tự động 100%:** Tạo Git Worktree và kích hoạt Coder Agent. |
+| **4** | **⚡ In Progress** | `in-progress` | Agent đang tích cực viết code, chạy kiểm thử `/tdd` trong Worktree. |
+| **5** | **🔍 Ready for Human** | `ready-for-human` | Reviewer Agent đã duyệt pass, PR đã mở $\rightarrow$ Dev bấm xem Diff và Merge. |
+| **6** | **✅ Done** | `done` / `closed` | Pull Request đã merge vào `main` $\rightarrow$ Tự động dọn dẹp Worktree. |
 
 ### C. Cơ chế State Mutex (Loại trừ nhãn cũ khi đổi cột)
 Khi kéo thẻ hoặc Agent cập nhật trạng thái:
@@ -119,9 +109,9 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 
 ## 5. Tương thích bộ skill `mattpocock/skills` (Zero-Fork)
 
-- **Cơ chế Sync:** Tải/Submodule trực tiếp từ `https://github.com/mattpocock/skills.git` vào thư mục `.agents/skills/` hoặc `~/.gemini/config/skills/`.
+- **Cơ chế Sync:** Cài đặt trực tiếp vào thư mục `.agents/skills/`.
 - Không cần fork hay sửa code gốc của Matt Pocock.
-- Đọc cấu hình mapping nhãn tại: `docs/agents/triage-labels.md` và `docs/agents/issue-tracker.md` (chuẩn `/setup-matt-pocock-skills`).
+- Đọc cấu hình mapping nhãn tại: `docs/agents/triage-labels.md` và `docs/agents/issue-tracker.md`.
 
 ---
 
@@ -136,12 +126,10 @@ glab issue update <id> --remove-label "ready-for-agent" --add-label "in-progress
 
 ## 7. Hệ thống thông báo (Notification System)
 
-1. **Desktop:**
-   - Orca Host API: `orca.host.call('notifications.show', { title, body })`.
-   - Native OS: `notify-send` (Linux) / AppleScript (macOS).
-2. **Mobile:**
-   - **Cách 1 (Sẵn có của Orca):** Orca Mobile Companion App (nhận push notifications thời gian thực từ relay).
-   - **Cách 2 (Webhook mở rộng):** Tích hợp Webhook bắn tin nhắn qua Telegram Bot / Discord / Pushover / NTFY khi có sự kiện cần can thiệp.
+Sử dụng cơ chế Native của Orca ADE (`notifications.show`):
+- **Desktop:** Hiển thị thông báo native trên màn hình máy tính.
+- **Mobile:** Tự động đẩy qua Web Relay tới ứng dụng **Orca Mobile** đã ghép nối (QR pairing). Không cần thiết lập thêm webhook Telegram/Discord bên ngoài.
+
 
 ---
 
