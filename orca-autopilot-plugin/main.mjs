@@ -34,7 +34,10 @@ export default function activate(orca) {
       fetchGitLabIssues(),
       fetchLocalMarkdownIssues()
     ])
-    return { issues: [...gh, ...gl, ...local] }
+    const allIssues = [...gh, ...gl, ...local]
+    // Apply crash recovery if recovering from prior unclean session
+    const recovered = orchestrator.recoverIncompleteTasks(allIssues)
+    return { issues: recovered }
   })
 
   // 3. Register RPC handler for Updating Status Label
@@ -51,14 +54,25 @@ export default function activate(orca) {
     return await orchestrator.runTaskPipeline(issue, { agentType: agentType || 'claude' })
   })
 
-  // 5. Register RPC handler for Syncing Skills
+  // 5. Register RPC handler for Worktree Cleanup
+  orca.commands.register('autopilot-cleanup-worktree', async (args) => {
+    const { task } = args || {}
+    if (!task) return { error: 'No task provided' }
+    return await orchestrator.cleanupCompletedWorktree(task)
+  })
+
+  // 6. Register RPC handler for Syncing Skills
   orca.commands.register('autopilot-sync-skills', async () => {
     return await syncMattPocockSkills()
   })
 
-  // 6. Listen to Orca Events
+  // 7. Listen to Orca Events
   orca.events.on('worktree.created', async (payload) => {
     orca.log(`[AutoPilot] Worktree created: ${payload?.worktreeId || 'new'} at ${payload?.path || ''}`)
+  })
+
+  orca.events.on('worktree.removed', async (payload) => {
+    orca.log(`[AutoPilot] Worktree removed: ${payload?.worktreeId || ''}`)
   })
 
   orca.events.on('agent.status.changed', async (payload) => {
@@ -68,6 +82,13 @@ export default function activate(orca) {
         title: 'Agent Completed Task',
         body: `Agent in ${payload.worktreeId || 'worktree'} has finished execution.`,
         level: 'success',
+        orcaHost: orca.host
+      })
+    } else if (payload?.state === 'waiting' || payload?.state === 'blocked') {
+      await sendNotification({
+        title: 'Agent Needs Input',
+        body: `Agent in ${payload.worktreeId || 'worktree'} requires human attention.`,
+        level: 'info',
         orcaHost: orca.host
       })
     }

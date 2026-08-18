@@ -915,15 +915,39 @@ function renderBoard() {
   statsBadge.textContent = filtered.length + ' tasks active'
 }
 
+function getAgentBadgeForColumn(column) {
+  switch (column) {
+    case 'needs-triage': return '🤖 Claude 3.7 (Triage)'
+    case 'needs-info': return '⚡ Gemini 3.7 / AGY'
+    case 'ready-for-agent': return '⏳ Claude 3.7 (Queued)'
+    case 'in-progress': return '🚀 Claude 3.7 + Fleet'
+    case 'ready-for-human': return '👀 Ready for Human'
+    case 'done': return '✅ Merged & Closed'
+    default: return 'Auto-Assigned'
+  }
+}
+
 function createCardElement(t) {
   var card = document.createElement('div')
   card.className = 'orca-card'
   card.setAttribute('draggable', 'true')
   card.setAttribute('data-id', t.id)
 
+  var col = t.column || 'needs-triage'
+  var agentBadgeText = getAgentBadgeForColumn(col)
+
   var labelsHtml = (t.labels || [])
     .map(function (label) { return '<span class="card-label-badge">' + escapeHtml(label) + '</span>' })
     .join('')
+
+  var actionBtnHtml = ''
+  if (col === 'ready-for-human') {
+    actionBtnHtml = '<button class="card-action-btn btn-view-diff" style="background:var(--app-primary);color:var(--app-primary-fg)">🔍 View Diff</button>'
+  } else if (col === 'in-progress') {
+    actionBtnHtml = '<button class="card-action-btn btn-focus-term" style="background:var(--app-muted);color:var(--app-fg)">⚡ Live Terminal</button>'
+  } else if (col === 'needs-triage' || col === 'ready-for-agent') {
+    actionBtnHtml = '<button class="card-action-btn btn-auto-run">🚀 Auto-Run</button>'
+  }
 
   card.innerHTML =
     '<div class="card-top-row">' +
@@ -938,9 +962,9 @@ function createCardElement(t) {
     '<div class="card-footer-row">' +
       '<span class="card-agent-indicator">' +
         '<span class="agent-dot"></span>' +
-        (t.assignee ? escapeHtml(t.assignee) : 'Auto-Assigned') +
+        escapeHtml(agentBadgeText) +
       '</span>' +
-      '<button class="card-action-btn btn-auto-run">🚀 Auto-Run</button>' +
+      actionBtnHtml +
     '</div>'
 
   card.addEventListener('dragstart', function (e) {
@@ -956,11 +980,44 @@ function createCardElement(t) {
     draggedTaskId = null
   })
 
-  var runBtn = card.querySelector('.btn-auto-run')
-  runBtn.addEventListener('click', function (e) {
-    e.stopPropagation()
-    runPipeline(t)
+  // Card click: focus worktree or view diff
+  card.addEventListener('click', function () {
+    if (col === 'in-progress') {
+      var wtName = t.worktree || ('agent/task-' + t.number)
+      callHost('terminal.focus', { worktree: wtName })
+      showToast('Đang chuyển tới tab Worktree: ' + wtName)
+    } else if (col === 'ready-for-human') {
+      callHost('file.openChanged', { mode: 'diff' })
+      showToast('Đang mở Trình xem Diff của Orca...')
+    }
   })
+
+  var runBtn = card.querySelector('.btn-auto-run')
+  if (runBtn) {
+    runBtn.addEventListener('click', function (e) {
+      e.stopPropagation()
+      runPipeline(t)
+    })
+  }
+
+  var diffBtn = card.querySelector('.btn-view-diff')
+  if (diffBtn) {
+    diffBtn.addEventListener('click', function (e) {
+      e.stopPropagation()
+      callHost('file.openChanged', { mode: 'diff' })
+      showToast('Đang mở Trình xem Diff của Orca...')
+    })
+  }
+
+  var termBtn = card.querySelector('.btn-focus-term')
+  if (termBtn) {
+    termBtn.addEventListener('click', function (e) {
+      e.stopPropagation()
+      var wtName = t.worktree || ('agent/task-' + t.number)
+      callHost('terminal.focus', { worktree: wtName })
+      showToast('Đang chuyển tới tab Worktree: ' + wtName)
+    })
+  }
 
   return card
 }
@@ -989,17 +1046,17 @@ function setupDragAndDrop() {
         showToast('Chuyển #' + task.number + ' sang [' + targetColumn + ']')
         persistTasks()
 
-        if (targetColumn === 'in-progress') {
-          showToast('⚡ Launching Coder Agent for #' + task.number + '...')
+        if (targetColumn === 'ready-for-agent' || targetColumn === 'in-progress') {
+          showToast('⚡ Tự động khởi chạy Fleet Agent cho #' + task.number + '...')
           runPipeline(task)
+        } else if (targetColumn === 'done') {
+          callHost('command.execute', { command: 'autopilot-cleanup-worktree', args: { task: task } })
         }
 
         renderBoard()
       }
     })
   })
-}
-
 function runPipeline(task) {
   showToast('🚀 [Stage 1] Spec Agent (/to-spec) analyzing #' + task.number + '...')
   task.column = 'in-progress'
@@ -1008,35 +1065,17 @@ function runPipeline(task) {
   renderBoard()
 
   callHost('notifications.show', {
-    title: 'Orca Fleet Pipeline Started',
+    title: 'Orca AutoPilot Pipeline Started',
     body: 'Task #' + task.number + ': ' + task.title + ' is now executing.'
   })
 
-  if (activeWorkspaceContext && activeWorkspaceContext.terminals && activeWorkspaceContext.terminals.length > 0) {
-    var termId = activeWorkspaceContext.terminals[0].id
-    callHost('terminal.sendText', {
-      terminalId: termId,
-      text: '# [Orca AutoPilot] Running Task #' + task.number + ': ' + task.title + ' via /implement + /tdd',
-      enter: true
-    })
-  }
-
-  setTimeout(function () {
-    showToast('⚡ [Stage 2] Coder Agent writing code & tests in Git Worktree (/implement + /tdd)...')
-  }, 2000)
-
-  setTimeout(function () {
-    task.column = 'ready-for-human'
-    task.labels = ['ready-for-human']
-    persistTasks()
-    renderBoard()
-    showToast('🔍 [Stage 3] Reviewer Agent passed (/code-review). Chờ con người duyệt PR!')
-    callHost('notifications.show', {
-      title: 'Task #' + task.number + ' Sẵn sàng Review (ready-for-human)',
-      body: 'Đã hoàn tất code & tests. Chờ duyệt PR trên GitHub/GitLab.'
-    })
-  }, 4500)
+  // Delegate execution to background worker
+  callHost('command.execute', {
+    command: 'autopilot-run-pipeline',
+    args: { issue: task, agentType: 'claude' }
+  })
 }
+
 
 function showToast(msg) {
   toastEl.textContent = msg

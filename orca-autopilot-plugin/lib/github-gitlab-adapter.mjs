@@ -7,13 +7,14 @@ import { existsSync } from 'node:fs'
 const execFileAsync = promisify(execFile)
 
 /**
- * Standard Status Labels based on mattpocock/skills vocabulary
+ * Standard 6-Status Labels based on canonical mattpocock/skills state machine
  */
 export const STATUS_LABELS = {
-  BACKLOG: ['needs-triage', 'needs-info'],
-  READY: ['ready-for-agent'],
-  WORKING: ['in-progress', 'status:in-progress'],
-  REVIEW: ['in-review', 'ready-for-human', 'status:in-review'],
+  NEEDS_TRIAGE: ['needs-triage'],
+  NEEDS_INFO: ['needs-info'],
+  READY_FOR_AGENT: ['ready-for-agent'],
+  IN_PROGRESS: ['in-progress', 'status:in-progress', 'working'],
+  READY_FOR_HUMAN: ['ready-for-human', 'in-review', 'status:in-review'],
   DONE: ['done', 'closed', 'status:done']
 }
 
@@ -21,9 +22,9 @@ export const ALL_STATUS_LABELS = [
   'needs-triage',
   'needs-info',
   'ready-for-agent',
-  'ready-for-human',
   'in-progress',
   'status:in-progress',
+  'ready-for-human',
   'in-review',
   'status:in-review',
   'done',
@@ -32,25 +33,29 @@ export const ALL_STATUS_LABELS = [
 ]
 
 /**
- * Map issue labels to Kanban Column bucket
+ * Map issue labels to 6-lane Kanban Column
  */
 export function determineKanbanColumn(labels = []) {
   const normalizedLabels = labels.map(l => (typeof l === 'string' ? l : l.name || '').toLowerCase())
 
-  if (normalizedLabels.some(l => STATUS_LABELS.WORKING.includes(l))) {
-    return 'working'
+  if (normalizedLabels.some(l => STATUS_LABELS.IN_PROGRESS.includes(l))) {
+    return 'in-progress'
   }
-  if (normalizedLabels.some(l => STATUS_LABELS.REVIEW.includes(l))) {
-    return 'review'
+  if (normalizedLabels.some(l => STATUS_LABELS.READY_FOR_HUMAN.includes(l))) {
+    return 'ready-for-human'
   }
-  if (normalizedLabels.some(l => STATUS_LABELS.READY.includes(l))) {
-    return 'ready'
+  if (normalizedLabels.some(l => STATUS_LABELS.READY_FOR_AGENT.includes(l))) {
+    return 'ready-for-agent'
+  }
+  if (normalizedLabels.some(l => STATUS_LABELS.NEEDS_INFO.includes(l))) {
+    return 'needs-info'
   }
   if (normalizedLabels.some(l => STATUS_LABELS.DONE.includes(l))) {
     return 'done'
   }
-  return 'backlog'
+  return 'needs-triage'
 }
+
 
 /**
  * Fetch GitHub issues using `gh` CLI
@@ -170,10 +175,19 @@ export async function fetchLocalMarkdownIssues(cwd = process.cwd()) {
  * Update status label on GitHub/GitLab or Local file
  */
 export async function updateIssueStatus(issue, targetColumn, cwd = process.cwd()) {
-  const newLabel = targetColumn === 'working' ? 'in-progress' :
-                   targetColumn === 'ready' ? 'ready-for-agent' :
-                   targetColumn === 'review' ? 'in-review' :
-                   targetColumn === 'done' ? 'done' : 'needs-triage'
+  const columnToLabelMap = {
+    'needs-triage': 'needs-triage',
+    'needs-info': 'needs-info',
+    'ready-for-agent': 'ready-for-agent',
+    'ready': 'ready-for-agent',
+    'in-progress': 'in-progress',
+    'working': 'in-progress',
+    'ready-for-human': 'ready-for-human',
+    'review': 'ready-for-human',
+    'in-review': 'ready-for-human',
+    'done': 'done'
+  }
+  const newLabel = columnToLabelMap[targetColumn] || 'needs-triage'
 
   if (issue.source === 'github') {
     // Remove existing status labels and add the new one
@@ -199,15 +213,24 @@ export async function updateIssueStatus(issue, targetColumn, cwd = process.cwd()
   return { success: false, error: 'Unsupported issue source' }
 }
 
-/**
- * Create a new Pull Request / Merge Request
- */
+
 export async function createPullRequest({ title, body, branch, base = 'main', cwd = process.cwd(), source = 'github' }) {
   if (source === 'github') {
-    const { stdout } = await execFileAsync('gh', ['pr', 'create', '--title', title, '--body', body, '--base', base, '--head', branch], { cwd })
-    return { success: true, prUrl: stdout.trim() }
+    try {
+      const { stdout } = await execFileAsync('gh', ['pr', 'create', '--title', title, '--body', body, '--base', base, '--head', branch], { cwd })
+      return { success: true, prUrl: stdout.trim() }
+    } catch (e) {
+      return { success: false, error: e.message, prUrl: `local://${branch}` }
+    }
+  } else if (source === 'gitlab') {
+    try {
+      const { stdout } = await execFileAsync('glab', ['mr', 'create', '--title', title, '--description', body, '--target-branch', base, '--source-branch', branch, '--yes'], { cwd })
+      return { success: true, prUrl: stdout.trim() }
+    } catch (e) {
+      return { success: false, error: e.message, prUrl: `local://${branch}` }
+    }
   } else {
-    const { stdout } = await execFileAsync('glab', ['mr', 'create', '--title', title, '--description', body, '--target-branch', base, '--source-branch', branch, '--yes'], { cwd })
-    return { success: true, prUrl: stdout.trim() }
+    return { success: true, prUrl: `local://${branch}` }
   }
 }
+
