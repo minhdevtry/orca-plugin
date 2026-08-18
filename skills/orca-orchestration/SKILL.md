@@ -145,15 +145,15 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
      --text "Task: /implement task #<id>. Follow spec.md and CONTEXT.md. Apply /tdd (Red-Green-Refactor). Make atomic commits." \
      --enter --json
    ```
-4. Wait for worker turn completion:
-   ```bash
-   orca terminal wait --terminal <childHandle> --for tui-idle --timeout-ms 600000 --json
-   ```
-- **Completion Criterion**: Subagent terminal reaches `tui-idle` state.
+4. **Token-Efficient Execution Modes**:
+   - **Mode A (Interactive / Human-Supervised - Recommended)**: Do NOT block the Coordinator session with a 10-minute wait command (which burns thinking tokens). The Coordinator reports: *"Worker MiniMax-M3 is running TDD in worktree `agent/task-<id>`. You can monitor live in the Orca UI. When done, re-invoke Phase 4 for review & merge."* and yields immediately.
+   - **Mode B (Autonomous / Short Probe Loop)**: If running in autonomous daemon mode, probe in short 15-second intervals via `orca orchestration check --types worker_done --timeout-ms 15000 --json` instead of a single 600s blocking freeze.
+- **Completion Criterion**: Subagent finishes implementation and card is ready for verification.
 
 ---
 
-### Phase 4: Shell Verification & Self-Healing Loop
+### Phase 4: Shell Verification & Token-Efficient Self-Healing
+
 > ⚠️ **MANDATORY INVARIANT (Evidence Before Assertions)**: Never accept an agent's self-claim of passing tests. The Coordinator MUST execute the shell test command directly.
 
 1. Execute test suite directly in child worktree:
@@ -162,24 +162,21 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
    ```
 2. **If Exit Code = 0 (PASS)**: Advance directly to Phase 5.
 3. **If Exit Code != 0 (FAIL)**:
-   - Check retry counter: Max **3 iterations** (`retryCount <= 3`).
-   - Record retry: `orca orchestration task-update --id $TASK_ID --status in-progress --result '{"retryCount": 1, "state": "healing-test-failures"}' --json`.
-   - Send failure logs to Coder agent with `/diagnosing-bugs`:
+   - **Case A: Minor Failure (Fix-in-Place Rule)**: If the failure is minor (lint, formatting, typo, small $\le 5$ line bug, or missing catch block), the **Coordinator MUST fix it directly in the worktree** and re-run `npm test`. **DO NOT bounce back to the worker for trivial fixes** (saving massive tokens and eliminating 10-minute wait cycles).
+   - **Case B: Major Architectural Failure (Max 2 Bounces)**: If fundamental logic is broken:
      ```bash
      orca terminal send --terminal <childHandle> \
        --text "Tests failed with errors: <error_log>. Activate /diagnosing-bugs and fix the implementation until npm test passes." \
        --enter --json
-     orca terminal wait --terminal <childHandle> --for tui-idle --timeout-ms 300000 --json
      ```
-   - **If still failing after 3 attempts**:
-     - Set status: `orca worktree set --worktree active --workspace-status needs-info --comment "Failed tests after 3 self-healing loops" --json`.
-     - Transition label: `gh issue edit <id> --add-label "needs-info" --remove-label "in-progress"`.
-     - Escalate to human.
+     Yield to let worker code in background without holding Coordinator turn.
+   - **If still failing after 2 major attempts**: Set `needs-info`, transition label, and escalate to human.
 - **Completion Criterion**: `npm test` exit code is 0 in the child worktree.
 
 ---
 
 ### Phase 5: Tripartite Review Committee & Decision Gate
+
 1. Lock task with native Decision Gate:
    ```bash
    GATE_ID=$(orca orchestration gate-create --task $TASK_ID --question "Does the 3-agent committee approve task #<id>?" --options '["yes","no"]' --json | jq -r .result.gate.id)
@@ -188,7 +185,10 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
    - **Axis 1 (Standards)** via **MiniMax-M3**: TypeScript types, lint, formatting, typos, smell baseline.
    - **Axis 2 (Architecture & Spec)** via **Antigravity CLI**: Module boundaries, `CONTEXT.md` adherence, filtering false positives.
    - **Axis 3 (Spec Compliance)** via **Claude Official**: Verification against `spec.md`.
-3. Resolve Gate & Cleanup:
+3. **Review Finding Remediation**:
+   - **Minor Issues**: The Reviewing Coordinator applies quick fixes directly to the branch in-place.
+   - **Major Violations**: Reject gate and request targeted worker rewrite.
+4. Resolve Gate & Cleanup:
    ```bash
    orca orchestration gate-resolve --id $GATE_ID --resolution "yes" --json
    orca orchestration worker-release --dispatch <dispatchId> --json
