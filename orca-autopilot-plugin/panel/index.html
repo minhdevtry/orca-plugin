@@ -1196,10 +1196,18 @@ window.addEventListener('message', function (event) {
     var cb = pendingRequests[data.requestId]
     if (cb) {
       delete pendingRequests[data.requestId]
-      cb(data)
+      var val = data.value !== undefined ? data.value : data.data
+      cb({
+        ok: Boolean(data.ok),
+        data: val,
+        value: val,
+        errorCode: data.errorCode,
+        error: data.error
+      })
     }
   }
 })
+
 
 function callHost(action, params) {
   return new Promise(function (resolve) {
@@ -1999,7 +2007,7 @@ function setupDragAndDrop() {
 async function runPipeline(task) {
   showToast('🚀 Khởi động Multi-Agent Pipeline cho #' + task.number + '...')
   openIssueDetailView(task)
-  appendTaskLog(task, '🚀 Khởi động Autonomous Multi-Agent Pipeline cho #' + task.number + ': ' + task.title)
+  appendTaskLog(task, '🚀 [AutoPilot] Khởi động Autonomous Multi-Agent Pipeline cho Task #' + task.number + ': ' + task.title)
 
   // Gửi Native Notification của Orca
   callHost('notifications.show', {
@@ -2012,18 +2020,18 @@ async function runPipeline(task) {
     var ctxRes = await callHost('workspace.readContext', {})
     var activeTermId = ctxRes && ctxRes.data && ctxRes.data.terminals && ctxRes.data.terminals[0] ? ctxRes.data.terminals[0].id : null
     if (activeTermId) {
-      var terminalCmd = 'echo "🚀 [Orca AutoPilot] Đang chạy Pipeline cho Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '" && git status --short\n'
+      var terminalCmd = 'echo "🚀 [Orca AutoPilot] Đang chạy Pipeline cho Task #' + task.number + ': ' + task.title.replace(/"/g, '\\"') + '" && echo "  -> Lead Agent: ' + (task.assignee || 'Claude Code') + '" && echo "  -> Worktree: ' + (task.worktree || 'agent/task-' + task.number) + '" && git status --short\n'
       await callHost('terminal.sendText', {
         terminalId: activeTermId,
         text: terminalCmd,
         enter: true
       })
-      appendTaskLog(task, '⚡ [Terminal] Đã gửi lệnh thực thi vào Terminal [' + activeTermId + ']')
+      appendTaskLog(task, '⚡ [Terminal] Đã kích hoạt lệnh thực thi trực tiếp vào Orca Terminal tab [' + activeTermId + ']')
     } else {
-      appendTaskLog(task, 'ℹ️ [Terminal] Không có tab terminal nào đang mở trong worktree. Khởi chạy ngầm...')
+      appendTaskLog(task, 'ℹ️ [Terminal] Đang chạy quy trình nền trong Worktree...')
     }
   } catch (err) {
-    appendTaskLog(task, '⚠️ [Terminal] Lỗi gửi lệnh terminal: ' + (err && err.message ? err.message : err))
+    appendTaskLog(task, '⚠️ [Terminal] ' + (err && err.message ? err.message : err))
   }
 
   // Step 1: Coding & Worktree
@@ -2059,6 +2067,7 @@ async function runPipeline(task) {
     }, 1500)
   }, 1500)
 }
+
 
 
 function showToast(msg) {
