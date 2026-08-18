@@ -79,7 +79,18 @@ Orca ADE provides an autonomous development environment with worktrees and termi
      - **`ready-for-agent` / `in-progress`**: **Claude (3.7 Sonnet)** for primary coding & TDD logic, delegating to **Gemini 3.7 Flash** for fast info retrieval and **MiniMax-M3 / DeepSeek** for high-token bulk boilerplate tasks.
      - **`ready-for-human`**: Alerts human via `notifications.show` for final diff review and merge.
 
+21. **Tripartite Review Committee & Fast/Slow Remediation Flow**:
+   - The pre-release review stage utilizes a specialized 3-agent committee running in parallel:
+     1. **MiniMax-M3**: High-throughput syntax, lint, formatting, and typo code review.
+     2. **Antigravity (Gemini 3.7 Flash Thinking)**: Verifies and filters review findings, discarding hallucinations or non-actionable nitpicks.
+     3. **Antigravity Architectural Reviewer**: Reviews module boundaries, `CONTEXT.md` compliance, architectural coherence, and potential non-linear breakthroughs.
+   - Configurable cycle guardrail: Each task is reviewed at most `$need_review_time` times (default = `1`).
+   - Remediation routing:
+     - **Minor severity**: Coder Agent patches in-place in the Git Worktree and re-runs tests $\rightarrow$ proceeds directly to PR / Done.
+     - **Major severity**: If under the review limit, adds a structured review comment to the issue and returns the card to `ready-for-agent` for full re-working; once the limit is reached, it patches best-effort and finalizes.
+
 ## Consequences
+
 
 - **Positive**:
   - Pure lean architecture: Zero external runtime daemon required beyond Orca ADE.

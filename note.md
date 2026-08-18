@@ -312,10 +312,33 @@ Cấu hình chi tiết phân công Agent chính và mạng lưới Subagents chu
 ### 3️⃣ Làn `ready-for-agent` $\rightarrow$ `in-progress` (Core Coding & Subagent Specialist Pool)
 - **Agent chính (Coder Lead)**: **Claude 3.7 Sonnet (Thinking)** (chịu trách nhiệm logic cốt lõi, kiến trúc và TDD loop).
 - **Mạng lưới Subagents bổ trợ (Gọi theo nhu cầu thực tế)**:
-  - 🔍 *Tra cứu dữ liệu & Research nhanh:* **Gemini 3.7 Flash / Antigravity**.
-  - 🏋️ *Tác vụ cơ bắp / Tốn token (Bulk boilerplate, migration, test data generation):* **MiniMax-M3 / DeepSeek V3**.
-  - 🧠 *Logic phức tạp, Red-Green Refactoring:* **Claude 3.7 Sonnet**.
-
 ### 4️⃣ Làn `ready-for-human` (Sign-off & Merge)
 - **Phụ trách**: **Human Developer**.
 - Bắn `notifications.show` ra Desktop & Orca Mobile để dev vào click xem Diff trực tiếp trên Orca (`orca file open-changed --mode diff`) và Merge.
+
+---
+
+## 16. Hội Đồng Review 3 Tác Tử & Cơ Chế Phân Luồng Tự Sửa Lỗi
+
+Để tối ưu hóa chi phí token và đảm bảo chất lượng phần mềm cao nhất trước khi mở Pull Request:
+
+### 👥 1. Hội đồng 3 Agent Review Song song (Tripartite Review Committee)
+1. **Agent 1 — MiniMax-M3 (Code Style & Typo Reviewer)**:
+   - Quét toàn bộ diff mã nguồn khổng lồ với chi phí token tối ưu.
+   - Phát hiện lỗi cú pháp, vi phạm linter, typos, đặt tên biến sai quy chuẩn, bug hiển nhiên.
+2. **Agent 2 — Antigravity / Gemini 3.7 Flash (Feedback Verifier & Filter)**:
+   - Thẩm định lại danh sách bắt bẻ của MiniMax-M3.
+   - Loại bỏ các phản hồi "ảo giác", bắt bẻ vô căn cứ hoặc không thực tế, chỉ giữ lại các issue có giá trị kỹ thuật thực sự.
+3. **Agent 3 — Antigravity (Architectural Reviewer)**:
+   - Soi kiến trúc hệ thống, đối chiếu trực tiếp với [`CONTEXT.md`](file:///home/minhdn3/Documents/orca-dhs/CONTEXT.md).
+   - Đảm bảo không gây xung đột module chéo, không phá vỡ boundaries và tìm kiếm cơ hội tối ưu hóa sâu.
+
+### 🛡️ 2. Giới Hạn Số Vòng Review (`$need_review_time`, Mặc định = 1)
+- Mỗi issue chỉ bị đưa vào vòng thẩm định tối đa `$need_review_time` lần nhằm **chặn đứng vòng lặp vô tận (Infinite Review Ping-Pong)**.
+
+### ⚡ 3. Cơ chế Phân Luồng Tự Sửa Lỗi (Fast-path vs Slow-path)
+- **Luồng Nhanh (Fast-path — Lỗi nhỏ / ít `minor`)**:
+  - Coder Agent tự động sửa lỗi ngay tại chỗ trong Git Worktree $\rightarrow$ Chạy lại test suite $\rightarrow$ **Mở PR và Done luôn** mà không làm phiền luồng Kanban.
+- **Luồng Chậm (Slow-path — Lỗi lớn / cấu trúc `major`)**:
+  - Nếu số lần review hiện tại `< $need_review_time`: Ghi chú nhận xét chi tiết vào comment của Issue, đổi tiêu đề `[Review Fix Needed] ...`, trả task về cột `ready-for-agent` để Coder Agent phân tích và làm lại bài bản.
+  - Nếu đã chạm giới hạn `$need_review_time`: Coder Agent tự khắc phục tối đa, đảm bảo tests xanh và đẩy thẳng sang `ready-for-human`.
