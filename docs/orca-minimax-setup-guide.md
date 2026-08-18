@@ -263,6 +263,38 @@ orca terminal send \
 | **`Error: The model is currently unreachable`** | Dùng sai tên model có hậu tố như `MiniMax-M3[1m]`. | Sửa `"model": "MiniMax-M3"` trong `settings.json` và `ANTHROPIC_MODEL="MiniMax-M3"`. |
 | **Hỏi Trust folder mỗi khi mở Worktree** | Worktree mới chưa được đăng ký trong `projects` config. | Hàm `autoTrustClaudeWorktree()` trong `worktree-setup.mjs` sẽ tự ghi `hasTrustDialogAccepted: true`. |
 | **Claude trả lời xong tự thoát về Shell** | Chạy cờ `-p` (Print mode). | Chạy trực tiếp `claude` (không có `-p`) để giữ phiên tương tác Interactive REPL. |
-| **Hỏi quyền khi đọc/ghi file hoặc chạy Bash** | Chưa bật Bypass Permissions mode. | Truyền cờ `--permission-mode bypassPermissions --dangerously-skip-permissions` và đặt `"defaultMode": "bypassPermissions"` trong `settings.json`. |
 | **`worker-start` từ chối model Gemini** | Orca native `worker-start` chỉ lọc Claude/Codex. | Dùng `orca terminal create --command "agy --model gemini-3.7-flash-high"` để bypass. |
+
+---
+
+## 7. 📖 Chuẩn Kiến Trúc Orca ADE Theo Tài Liệu Gốc (Official Orca Docs)
+
+Tham khảo từ tài liệu chính thức của Orca ([onorca.dev/docs](https://www.onorca.dev/docs)):
+
+### 7.1. Mô Hình Worktrees Độc Lập (Disposable Worktrees - `/docs/model/worktrees`)
+- **Triết lý**: Mỗi Feature / Task / Agent là một **Git Worktree riêng biệt** phân nhánh từ `start-from ref` (ví dụ `origin/main`).
+- **An toàn song song**: Các tác tử chạy song song không bao giờ xung đột file của nhau vì mỗi worktree có thư mục vật lý, branch và PTY terminal riêng.
+- **Vòng đời**: Tạo ngầm trong nền (`git worktree add`) ➔ Tác tử thực thi ➔ Xem Diff / Review trực quan ➔ Commit, Push & Mở PR ➔ Tự động dọn dẹp hoặc lưu trữ (Archive).
+
+### 7.2. Triết Lý Quyền Hạn Tự Động (Permissions Default / "Yolo Mode" - `/docs/agents/supported`)
+- Orca mặc định khuyến nghị bật cờ bỏ qua quyền cho các agent chạy trong Worktree:
+  - Claude Code: `--dangerously-skip-permissions` (hoặc `--permission-mode bypassPermissions`)
+  - Codex CLI: `--dangerously-bypass-approvals-and-sandbox`
+  - Antigravity CLI (`agy`): `--dangerously-skip-permissions`
+  - Gemini / Cursor / Crush: `--yolo`
+- **Lý do**: Vì Git Worktree là môi trường dùng một lần (*disposable sandbox*), agent có thể tự do thử nghiệm, chạy bash và chỉnh sửa code mà không làm phiền người dùng phải xác nhận từng lệnh. Toàn bộ thay đổi vẫn được kiểm duyệt qua Diff Viewer trước khi merge vào nhánh chính.
+
+### 7.3. Trạng Thái Phiên & Hook Giám Sát (Agent Sessions & Hooks - `/docs/model/agents-sessions`, `/docs/agents/hooks-memory`)
+- Orca theo dõi vòng đời tác tử qua chuỗi **OSC Title sequence** và Hook môi trường (`{userData}/agent-hooks/endpoint.env`):
+  - 🔄 **Spinner**: Đang làm việc (Working).
+  - ❓ **Dấu hỏi màu Hổ phách (Amber)**: Đang chờ người dùng cấp quyền hoặc nhập input (*Needs You*).
+  - ✅ **Dấu tích / Chấm Xanh Ngọc (Emerald)**: Hoàn tất phiên (Done).
+  - 🔴 **Chấm Đỏ**: Bị chặn hoặc lỗi (Blocked / Failed).
+  - ⚪ **Chấm Xám**: Rảnh rỗi (Idle).
+
+### 7.4. Khôi Phục Phiên & Ngủ Đông Tác Tử (Session Restore & Hibernation - `/docs/model/session-restore`, `/docs/agents/hibernation`)
+- **Daemon-backed PTY**: Orca chạy một daemon nền quản lý PTY. Khi đóng cửa sổ Orca hoặc khởi động lại ứng dụng, các tác tử đang chạy không bị ngắt quãng mà được tự động tái kết nối (*warm-reattach*).
+- **Agent Hibernation**: Sau 30 phút rảnh rỗi ở trạng thái *Done*, Orca sẽ đưa tác tử vào trạng thái ngủ đông để giải phóng tài nguyên CPU/RAM, và tự động phục hồi (*Resume*) đúng phiên hội thoại khi người dùng mở lại tab worktree đó.
+- **Agent Memory**: Orca tôn trọng nguyên vẹn các file chỉ dẫn chuyên sâu của tác tử như `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.codex/` tại gốc repository.
+
 
