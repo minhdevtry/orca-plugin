@@ -348,13 +348,21 @@ export class PipelineOrchestrator {
     const orcaBin = await resolveOrcaBinary()
     if (orcaBin) {
       try {
+        // 1. Create child worktree
         await execFileAsync(
           orcaBin,
-          ['worktree', 'create', '--name', branchName, '--agent', agentType, '--prompt', prompt, '--setup', 'run', '--json'],
-          { cwd: repoPath, timeout: 5000 }
+          ['worktree', 'create', '--name', branchName, '--json'],
+          { cwd: repoPath, timeout: 10000 }
+        )
+        // 2. Spawn terminal inside the new child worktree and focus it
+        const agentCmd = `CLAUDE_CONFIG_DIR=$HOME/.claude-ide claude -p "${prompt.replace(/"/g, '\\"')}"`
+        await execFileAsync(
+          orcaBin,
+          ['terminal', 'create', '--worktree', `name:${branchName}`, '--command', agentCmd, '--focus', '--json'],
+          { cwd: repoPath, timeout: 10000 }
         )
         runState.worktree = branchName
-        this.log(runState, `[Stage 3: Coding] Worktree [${branchName}] sẵn sàng. Đang chạy /implement + /tdd...`)
+        this.log(runState, `[Stage 3: Coding] Worktree [${branchName}] & Terminal con đã sẵn sàng. Đang chạy /implement + /tdd...`)
       } catch (e) {
         runState.worktree = branchName
         this.log(runState, `[Stage 3: Coding] Chạy Coder Agent trong worktree môi trường...`)
@@ -364,6 +372,7 @@ export class PipelineOrchestrator {
       this.log(runState, `[Stage 3: Coding] Chạy Coder Agent trong worktree môi trường...`)
     }
   }
+
 
 
   /**
