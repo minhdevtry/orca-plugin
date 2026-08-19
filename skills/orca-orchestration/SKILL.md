@@ -189,8 +189,9 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
    # GitHub: gh issue edit <id> --add-label "in-progress" --remove-label "needs-triage,ready-for-agent"
    # GitLab: glab issue update <id> --label "in-progress" --unlabel "needs-triage,ready-for-agent"
    ```
-3. Inject **Worker Safety Capsule Contract** into dispatch prompt:
+3. Inject **Worker Safety Capsule Contract & Callback Instruction** into dispatch prompt:
    ```bash
+   COORDINATOR_HANDLE=$(~/.local/bin/orca terminal list --json 2>/dev/null | jq -r '.[0].id // "active"')
    ~/.local/bin/orca orchestration dispatch --task $TASK_ID --to <childHandle> --inject --json
    ~/.local/bin/orca terminal send --terminal <childHandle> \
      --text "Task: /implement task #<id>
@@ -204,20 +205,25 @@ AUTHORITY:
   - External Side Effects: NONE (no network mutation, no external publishing)
 SAFETY BOUNDARY:
   - Never bypass test gates or expose credentials.
+CALLBACK ON COMPLETION:
+  When implementation and tests pass, send completion signal back to wake up Coordinator:
+  ~/.local/bin/orca terminal send --terminal \"$COORDINATOR_HANDLE\" --text \"Task #<id> completed by worker. Triggering Phase 4 verification & review.\" --enter
 ================================" \
      --enter --json
    ```
    *(For watchdog execution with process-tree isolation: `node scripts/relay-exec.mjs fast-coder 900000 run_result.json -p "Task: /implement task #<id>"`)*
 
-4. 🚫 **STRICT NON-BLOCKING INVARIANT (CẤM NGỒI CHỜ / CẤM TERMINAL WAIT)**:
-   > ⚠️ **ZERO-WAITING RULE**: Once the Coordinator sends the dispatch command to the worker terminal, the Coordinator **MUST YIELD THE TURN IMMEDIATELY**.
-   > - **ABSOLUTELY FORBIDDEN**: Calling `~/.local/bin/orca terminal wait`, `timeout 560 ...`, `sleep`, or any synchronous waiting loops. Doing so freezes the Coordinator for 10–15 minutes, burning thousands of wasted tokens in "Puttering / Photosynthesizing" mode.
-   > - **Immediate Output & Stop**: The Coordinator prints a short 2-line dispatch notice and **STOPS calling tools to end its turn immediately**:
+4. ⚡ **EVENT-DRIVEN WAKEUP INVARIANT (BÁO CÁO TỰ ĐỘNG - KHÔNG NGỒI SOI)**:
+   > ⚠️ **HOW ASYNC NOTIFICATION WORKS**:
+   > - **Coordinator dispatches and yields turn immediately**: It does NOT run blocking commands (`terminal wait`, `timeout 560`) while the worker is coding.
+   > - **Worker wakes up Coordinator**: As instructed in the Safety Capsule, once the worker finishes, it sends a text message back to the Coordinator's terminal.
+   > - **Reactive Resume**: When the message arrives, the Coordinator wakes up automatically and proceeds immediately to Phase 4 (Shell Verification) and Phase 5/6 (Review & Auto-Merge).
+   > - **Dispatch Notice**:
    >   ```markdown
    >   🚀 **Worker Dispatched**: MiniMax-M3 is implementing task `#<id>` in worktree `agent/task-<id>`.
-   >   👉 You can monitor live in the Orca UI. When worker finishes, simply tell me to **"review task #<id>"** to trigger Phase 4-6 (Gauntlet, Blind Review & Auto-Merge).
+   >   🔔 Worker will automatically notify this session upon completion to trigger Phase 4 verification.
    >   ```
-- **Completion Criterion**: Worker terminal launched, task payload sent, turn yielded cleanly.
+- **Completion Criterion**: Worker terminal launched, callback configured, turn yielded cleanly.
 
 ---
 
