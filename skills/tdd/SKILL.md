@@ -33,6 +33,7 @@ When the shape of that interface is itself in question — how deep the module i
 
 ## Rules of the loop
 
-- **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
+- **Red before green (Negative Control Invariant).** Write the failing test first, run it in the shell, and verify it fails for the *expected reason* before writing any implementation code.
+  - **Negative Control Evidence**: The worker MUST capture the failing test run output (e.g. exit code != 0, assertion error) as verifiable proof that the test is sensitive to missing behavior and not tautological.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
 - **Refactoring is not part of the loop.** It belongs to the review stage (see the `code-review` skill), not the red → green implementation cycle.

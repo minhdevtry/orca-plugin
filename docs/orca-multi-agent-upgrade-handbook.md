@@ -193,7 +193,54 @@ Phân loại chính xác nguyên nhân lỗi trước khi hành động, tránh 
 
 ---
 
-## 12. 📋 Checklist 9 Bước Thực Thi Khi Ngồi Vào Máy Mới
+## 12. Hạng Mục 11: Bản Kê Bằng Chứng Máy Đọc (`Evidence Manifest`) & Negative Control
+*(Tham chiếu kỹ thuật từ `ravidsrk/orca-fleet`)*
+
+### 1. Nguyên Tắc Negative Control (Đỏ Trước Khi Xanh)
+Worker tuyệt đối không được báo cáo suông. Để chứng minh bài test thực sự có giá trị và không bị viết rỗng (tautological/fake test), worker phải:
+1. Viết test case trước.
+2. Chạy test và lưu lại log **test bị ĐỎ (Negative Control Proof)**.
+3. Viết mã nguồn và chạy lại test đến khi **test XANH**.
+
+### 2. Cấu Trúc Bản Kê Bằng Chứng (`run_result.json` mở rộng):
+```json
+{
+  "version": "orca-evidence.v1",
+  "taskId": "task-102",
+  "contract": {
+    "specDigest": "sha256:7a8b9c...",
+    "criteria": ["AC-1: Idempotency Key check", "AC-2: Refund retry"]
+  },
+  "negativeControl": {
+    "executed": true,
+    "result": "RED (1 test failed as expected)",
+    "logArtifact": ".scratch/negative_control_red.log"
+  },
+  "positiveControl": {
+    "exitCode": 0,
+    "result": "GREEN (14 passed, 0 failed)",
+    "logArtifact": ".scratch/positive_control_green.log"
+  },
+  "bindingAudit": {
+    "AC-1": "test/billing.test.ts:L45",
+    "AC-2": "test/billing.test.ts:L78"
+  }
+}
+```
+
+### 3. Danh Mục 10 Hạm Đội Chuyên Biệt (Outcome Missions):
+- 🚢 **`ship-it`**: Biến Intent/Spec $\rightarrow$ Code TDD $\rightarrow$ Gauntlet $\rightarrow$ Blind Review $\rightarrow$ Auto-Merge.
+- 🧹 **`clean-sweep`**: Quét sạch toàn bộ backlog issue về 0 với SHA-backed PR per finding.
+- 🛡️ **`harden-it`**: Threat model $\rightarrow$ Exploit test $\rightarrow$ Fix $\rightarrow$ Re-attack $\rightarrow$ Clean re-audit.
+- 🧪 **`prove-it`**: Đóng khoảng trống test bằng Mutation Testing (`Stryker`).
+- ⚡ **`speed-it`**: Tối ưu hiệu năng đạt chuẩn ngân sách latency / Core Web Vitals.
+- 🎯 **`deflake-it`**: Diệt flaky tests bằng chuỗi lặp lại 100 lần (100x statistical streak).
+- 🔬 **`root-cause`**: Tái hiện lỗi $\rightarrow$ Bác bỏ giả thuyết đối nghịch $\rightarrow$ Chứng minh 1 nguyên nhân gốc duy nhất.
+- 🔍 **`review-it`**: Thẩm định mù GO/NO-GO độc lập, chế độ Read-Only, không có quyền sửa code.
+
+---
+
+## 13. 📋 Checklist 9 Bước Thực Thi Khi Ngồi Vào Máy Mới
 
 - [ ] **Bước 1: Pull mã nguồn mới nhất**:
   ```bash
