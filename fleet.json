@@ -43,5 +43,17 @@
     "tripwireWrapper": "scripts/safe-research.sh",
     "gauntletRunner": "scripts/run-gauntlet.sh",
     "resultContract": "run_result.json"
+  },
+  "autoMerge": {
+    "forbiddenPaths": [
+      ".env",
+      ".claude/**",
+      ".claude-ide/**",
+      "fleet.json",
+      "skills/orca-orchestration/**",
+      "CLAUDE.md",
+      "AGENTS.md"
+    ],
+    "note": "A branch touching any of these paths is never auto-merged by Phase 6, regardless of Decision Gate outcome. Transition to needs-info and run the 3-action escalation protocol instead."
   }
 }

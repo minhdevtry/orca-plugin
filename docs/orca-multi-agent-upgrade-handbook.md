@@ -154,7 +154,46 @@ Khi xử lý các Issue liên quan đến Backend/API, Lead Coordinator bắt bu
 
 ---
 
-## 10. 📋 Checklist 9 Bước Thực Thi Khi Ngồi Vào Máy Mới
+## 10. Hạng Mục 9: Bao Con Nhộng An Toàn Worker (`Worker Safety Capsule`)
+*(Tham chiếu kỹ thuật từ `tinkerer0/orca-autonomous-coordinator`)*
+
+Khi điều phối task cho bất kỳ subagent nào tại **Phase 3**, bắt buộc phải inject mẫu hợp đồng an toàn:
+
+```text
+=== 🛡️ WORKER SAFETY CAPSULE ===
+ROLE: Finite implementation worker (CẤM biến thành coordinator, Depth <= 3).
+OBJECTIVE: Triển khai task #<id> đúng spec.md và CONTEXT.md bằng /tdd.
+EXCLUSIONS: CẤM đụng vào file cấu hình gốc, CẤM sửa file ngoài module được phân công.
+AUTHORITY:
+  - Exact Read Paths: [spec.md, CONTEXT.md, thư mục source và test liên quan]
+  - Exact Write Paths: [danh sách file cần sửa]
+  - External Side Effects: NONE (cấm gọi mạng ngoài, cấm deploy)
+SAFETY BOUNDARY:
+  - Cấm vượt gate kiểm thử, cấm làm lộ bí mật API.
+  - Tự động xuất run_result.json sau khi hoàn tất.
+================================
+```
+
+---
+
+## 11. Hạng Mục 10: Thang Phản Ứng Sự Cố 7 Nấc (`Bounded Failure Ladder`)
+*(Tham chiếu kỹ thuật từ `tinkerer0/orca-autonomous-coordinator`)*
+
+Phân loại chính xác nguyên nhân lỗi trước khi hành động, tránh vòng lặp retry vô tận:
+
+| Loại Lỗi | Hành Động Tự Hành Chuẩn | Hạn Mức (Budget) |
+| :--- | :--- | :--- |
+| **Lỗi mạng / Runtime tạm thời** | Thử lại đúng cấu hình cũ. | Tối đa **1 lần**. |
+| **Hết Quota / API lỗi / Thiếu tool** | **KHÔNG retry vô ích**; Chuyển ngay (Failover) sang làn khác trong `fleet.json` (VD: MiniMax $\rightarrow$ Claude). | Tối đa **1 lần đổi**. |
+| **Worker bị đơ (Stall / Treo terminal)** | Gửi 1 prompt ping liveness; nếu vẫn đơ thì `relay-exec` kill (`process.kill(-pid, "SIGKILL")`) và giao lại. | Tối đa **1 lần cứu hộ**. |
+| **Xung đột Interface / Shared State** | Dừng ngay lập tức các worker song song và chuyển sang làm tuần tự (**Serialize**). | Chuyển ngay tuần tự. |
+| **Lệch format kết quả** | Yêu cầu định dạng lại file `run_result.json` mà không bắt code lại phần đã pass. | Tối đa **1 lần**. |
+| **Lỗi kiểm thử / Unit test fail** | Lead tự sửa tại chỗ ($\le 5$ dòng) hoặc đá về Coder kèm log chi tiết. | Tối đa **2 lần bounce**. |
+| **Vi phạm Gate an toàn** | Dừng luồng bị ảnh hưởng ngay lập tức; cấm đi đường vòng. | Hard stop & báo cáo. |
+
+---
+
+## 12. 📋 Checklist 9 Bước Thực Thi Khi Ngồi Vào Máy Mới
 
 - [ ] **Bước 1: Pull mã nguồn mới nhất**:
   ```bash
