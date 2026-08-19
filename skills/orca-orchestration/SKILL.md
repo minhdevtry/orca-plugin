@@ -114,13 +114,25 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
    # GitLab: glab issue update <id> --label "needs-triage"
    ```
 3. Analyze Issue & Branching Decision:
-   - **Branch A: Clear & Actionable** ➔ Invoke `/triage` and `/to-spec`. Write `spec.md`, transition status to `ready-for-agent`:
-     ```bash
-     orca worktree set --worktree active --issue <id> --workspace-status ready-for-agent --comment "Spec approved, ready for implementation" --json
-     # GitHub: gh issue edit <id> --add-label "ready-for-agent" --remove-label "needs-triage"
-     # GitLab: glab issue update <id> --label "ready-for-agent" --unlabel "needs-triage"
-     ```
-     Proceed directly to Phase 2.
+   - **Branch A: Clear & Actionable** ➔ Invoke `/triage` and `/to-spec`.
+     - Write `spec.md` with explicit module interfaces, dependencies, and file modification targets.
+     - **9 API Design Gates (`old-coder-api`)**: If designing backend endpoints, `spec.md` MUST comply with:
+       1. *Boring*: Plural nouns (`/orders`), standard status codes (`400`, `404`, `422`, `429`).
+       2. *Don't break userspace*: Additive optional fields only; never rename/delete existing fields.
+       3. *Simple Auth*: Scoped API keys for machine-to-machine; OAuth for client sessions.
+       4. *Server Authorization*: Enforce tenant/user access server-side; never trust client headers.
+       5. *Idempotency Keys*: Mandatory for mutation operations with side-effects (payments, refunds).
+       6. *Rate Limiting*: Every endpoint scoped with headers (`Retry-After`).
+       7. *Cursor Pagination*: `WHERE id > :cursor LIMIT :n`; strictly avoid `OFFSET`.
+       8. *Expensive fields optional*: Gated behind `?include=...` (disabled by default).
+       9. *No leakage*: Zero database table IDs, internal enums, or raw errors in public JSON.
+     - Transition status to `ready-for-agent`:
+       ```bash
+       orca worktree set --worktree active --issue <id> --workspace-status ready-for-agent --comment "Spec approved with 9 API gates, ready for build" --json
+       # GitHub: gh issue edit <id> --add-label "ready-for-agent" --remove-label "needs-triage"
+       # GitLab: glab issue update <id> --label "ready-for-agent" --unlabel "needs-triage"
+       ```
+       Proceed directly to Phase 2.
    - **Branch B: Missing Information / Questions / Ambiguity** ➔ Invoke `/to-questionnaire`. Format structured multiple-choice questions, transition label to `needs-info`, and post questions as a comment on the issue:
      ```bash
      orca worktree set --worktree active --issue <id> --workspace-status needs-info --comment "Waiting for human input on requirements" --json
@@ -163,6 +175,7 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
      --text "Task: /implement task #<id>. Follow spec.md and CONTEXT.md. Apply /tdd (Red-Green-Refactor). Make atomic commits." \
      --enter --json
    ```
+   *(Optional Watchdog Execution: `node scripts/relay-exec.mjs claude-m3 900000 run_result.json -p "Task: /implement task #<id>"`)*
 4. **Token-Efficient Execution Modes**:
    - **Mode A (Interactive / Human-Supervised - Recommended)**: Do NOT block the Coordinator session with a 10-minute wait command (which burns thinking tokens). The Coordinator reports: *"Worker MiniMax-M3 is running TDD in worktree `agent/task-<id>`. You can monitor live in the Orca UI. When done, re-invoke Phase 4 for review & merge."* and yields immediately.
    - **Mode B (Autonomous / Short Probe Loop)**: If running in autonomous daemon mode, probe in short 15-second intervals via `orca orchestration check --types worker_done --timeout-ms 15000 --json` instead of a single 600s blocking freeze.
@@ -170,13 +183,15 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
 
 ---
 
-### Phase 4: Shell Verification & Token-Efficient Self-Healing
+### Phase 4: Shell Verification & Multi-Layer Gauntlet
 
-> ⚠️ **MANDATORY INVARIANT (Evidence Before Assertions)**: Never accept an agent's self-claim of passing tests. The Coordinator MUST execute the shell test command directly.
+> ⚠️ **MANDATORY INVARIANT (Evidence Before Assertions)**: Never accept an agent's self-claim of passing tests. The Coordinator MUST execute the shell verification directly.
 
-1. Execute test suite directly in child worktree:
+1. Execute test suite / Gauntlet directly in child worktree:
    ```bash
-   cd /home/minhdn3/orca/workspaces/<repo>/agent-task-<id> && npm test
+   cd /home/minhdn3/orca/workspaces/<repo>/agent-task-<id>
+   # Run Standard Tests OR Full Quality Gauntlet:
+   npm test || ./scripts/run-gauntlet.sh .
    ```
 2. **If Exit Code = 0 (PASS)**: Advance directly to Phase 5.
 3. **If Exit Code != 0 (FAIL)**:
@@ -189,20 +204,27 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
      ```
      Yield to let worker code in background without holding Coordinator turn.
    - **If still failing after 2 major attempts**: Set `needs-info`, transition label, and escalate to human.
-- **Completion Criterion**: `npm test` exit code is 0 in the child worktree.
+- **Completion Criterion**: `npm test` / `run-gauntlet.sh` exit code is 0 in the child worktree.
 
 ---
 
-### Phase 5: Tripartite Review Committee & Decision Gate
+### Phase 5: Tripartite Review Committee & Blind Adversarial Gate
 
 1. Lock task with native Decision Gate:
    ```bash
    GATE_ID=$(orca orchestration gate-create --task $TASK_ID --question "Does the 3-agent committee approve task #<id>?" --options '["yes","no"]' --json | jq -r .result.gate.id)
    ```
-2. Execute 2-Axis `/code-review` across parallel agents:
-   - **Axis 1 (Standards)** via **MiniMax-M3**: TypeScript types, lint, formatting, typos, smell baseline.
-   - **Axis 2 (Architecture & Spec)** via **Antigravity CLI (Gemini 3.7 Flash High)**: Module boundaries, `CONTEXT.md` adherence, filtering false positives.
-   - **Axis 3 (Spec Compliance)** via **Claude Official**: Verification against `spec.md`.
+2. **Blind Adversarial Review Protocol (Antigravity CLI / Gemini 3.7 Flash High)**:
+   - To eliminate Confirmation Bias, feed Antigravity **ONLY 4 pure inputs**:
+     1. Issue Requirements (`gh issue view <id>` / `glab issue view <id>`).
+     2. Approved `spec.md`.
+     3. Current Worktree Git Commit SHA.
+     4. Gauntlet Execution Output (`scripts/run-gauntlet.sh`).
+   - Run via Safe Tripwire: `./scripts/safe-research.sh ~/orca/workspaces/<repo>/agent-task-<id>`
+   - Parallel Review Axes:
+     - **Axis 1 (Standards)** via **MiniMax-M3**: TypeScript types, lint, formatting, typos, smell baseline.
+     - **Axis 2 (Architecture & Audit)** via **Antigravity CLI (Gemini 3.7 Flash High)**: Module boundaries, `CONTEXT.md` adherence, mutation resistance.
+     - **Axis 3 (Spec Compliance)** via **Claude Official**: Verification against `spec.md` & 9 API Design Gates.
 3. **Review Finding Remediation**:
    - **Minor Issues**: The Reviewing Coordinator applies quick fixes directly to the branch in-place.
    - **Major Violations**: Reject gate and request targeted worker rewrite.

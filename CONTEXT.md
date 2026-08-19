@@ -27,6 +27,14 @@ This repository defines the **100% Native Multi-Agent Architecture** for **Orca 
 2. **MiniMax-M3 (Custom Gateway)**: Lập trình siêu tốc, viết Unit Test TDD, quét cú pháp và linter.
 3. **Antigravity CLI (`agy` - Gemini 3.7 Flash High)**: Nghiên cứu kỹ thuật Pro/Con, thẩm định kiến trúc và soi `CONTEXT.md`.
 
+### 4. Bộ Công Cụ An Toàn, Relay & Võ Đài Gauntlet
+- **Cấu hình Fleet Lanes (`fleet.json`)**: Định nghĩa các làn thực thi (`coordinator`, `fast-coder`, `deep-research`, `cheap-tests`).
+- **Relay Exec (`scripts/relay-exec.mjs`)**: Quản trị tiến trình an toàn, tự động diệt toàn bộ process-tree khi hết timeout.
+- **Safe Research Tripwire (`scripts/safe-research.sh`)**: Bẫy vi phạm bảo đảm chế độ Read-Only cho Antigravity.
+- **Quality Gauntlet (`scripts/run-gauntlet.sh`)**: Kiểm định đa tầng: Linter + Changed-Line Coverage + Mutation Testing (`Stryker`).
+- **9 Cổng Thiết Kế API (`old-coder-api`)**: Bộ quy chuẩn 9 cổng bắt buộc khi thiết kế API tại Phase 1 (`/to-spec`).
+- **Giao Thức Thẩm Định Mù (Blind Adversarial Review)**: Antigravity đánh giá chỉ với 4 đầu vào khách quan để tránh thiên kiến.
+
 ---
 
 ## 3. 3-Tier Hierarchy & Non-Proliferation Rules (Depth $\le$ 3)

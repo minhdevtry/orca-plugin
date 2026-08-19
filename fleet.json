@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "orca-fleet.v1",
+  "defaultLane": "fast-coder",
+  "lanes": {
+    "coordinator": {
+      "provider": "claude",
+      "binary": "claude",
+      "model": "claude-sonnet-5",
+      "effort": "high",
+      "permissionMode": "bypassPermissions",
+      "dangerouslySkipPermissions": true,
+      "role": "Autonomous Triage, Spec Design, Gatekeeper & MR Auto-Merge"
+    },
+    "fast-coder": {
+      "provider": "minimax-m3",
+      "binary": "claude-m3",
+      "model": "MiniMax-M3",
+      "gateway": "https://aiapi.2tocom.space",
+      "effort": "high",
+      "permissionMode": "bypassPermissions",
+      "dangerouslySkipPermissions": true,
+      "timeout": "15m",
+      "role": "High-throughput TDD implementation, syntax review & fast coding"
+    },
+    "deep-research": {
+      "provider": "antigravity",
+      "binary": "agy",
+      "model": "gemini-3.7-flash-high",
+      "readOnly": true,
+      "tripwireEnabled": true,
+      "role": "Architecture Audit, CONTEXT.md review & Blind Adversarial Review"
+    },
+    "cheap-tests": {
+      "provider": "aider",
+      "binary": "aider",
+      "model": "deepseek-coder",
+      "role": "Generate mock data, fixtures and property-based test stubs"
+    }
+  },
+  "execution": {
+    "relayWrapper": "scripts/relay-exec.mjs",
+    "tripwireWrapper": "scripts/safe-research.sh",
+    "gauntletRunner": "scripts/run-gauntlet.sh",
+    "resultContract": "run_result.json"
+  }
+}
