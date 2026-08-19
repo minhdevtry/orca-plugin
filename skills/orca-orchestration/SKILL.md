@@ -1,362 +1,176 @@
 ---
 name: orca-orchestration
-description: Use when orchestrating autonomous tasks, running subagent waves, coordinating multi-agent runs, or executing full-lifecycle issues in Orca ADE.
+description: Use when orchestrating autonomous tasks across multiple agents in Orca ADE, handling issues from triage to merge, dispatching workers into isolated worktrees, or managing multi-agent runs
 ---
 
 # Orca Multi-Agent Orchestration
 
 ## Overview
-End-to-end multi-agent orchestration engine for Orca ADE. Coordinates a 3-agent fleet across isolated Git Worktrees, native Decision Gates, and Matt Pocock skills with deterministic self-healing loops and strict 3-tier hierarchy enforcement.
-
-### ⚠️ CLI Executable Resolution
-Always use the proper Orca binary path:
-- On Linux outside an Orca-managed terminal, use `~/.local/bin/orca` or `orca-ide`.
-- **Never run bare `/usr/bin/orca`** (which starts the GNOME Screen Reader).
-- To inspect dynamic CLI flags supported by your current Orca build: `~/.local/bin/orca skills get orchestration --full`.
+Autonomous multi-agent orchestration engine for Orca ADE. Coordinates a specialized 3-agent fleet across isolated Git Worktrees, native Decision Gates, and strict event-driven callbacks with self-healing invariants.
 
 ---
 
 ## When to Use
-Use this skill when:
+**Use this skill when:**
 - Orchestrating tasks autonomously across multiple specialized agents in Orca ADE.
-- Managing an issue from triage through spec, implementation, review, and release.
+- Managing an issue from triage through spec, implementation, review, and merge.
 - Dispatching subagents in isolated Git Worktrees with supervised worker contracts.
-- Setting up Orca Scheduled Automations for background task ingestion.
+- Automating background task intake via Orca Scheduled Automations.
 
-Do NOT use when:
-- Performing a quick single-file edit in the current workspace (use direct editing instead).
-- Running a simple local test or one-off shell command.
+**Do NOT use when:**
+- Performing a quick single-file edit in the current workspace (use direct file editing).
+- Running a simple local one-off command without agent coordination.
 
 ---
 
-## Architecture & Fleet Matrix
+## Quick Reference: 6-Stage Lifecycle & 3-Tier Fleet
 
-### Specialized Agent Profiles
-
-| Role | Profile & Model | Primary Responsibilities | Canonical Launch Command |
+### 1. Fleet Matrix
+| Role | Agent Profile | Primary Focus | Canonical Launch Binary |
 | :--- | :--- | :--- | :--- |
-| **Coordinator / Spec** | Claude Official (Sonnet 5) | Triage, Spec design, Gate supervision, PR release | `~/.local/bin/orca terminal create --worktree "<selector>" --title "Official Claude" --command "claude --permission-mode bypassPermissions --dangerously-skip-permissions" --focus --json` |
-| **Coder / TDD** | MiniMax-M3 (Custom Gateway) | High-throughput coding, Unit test TDD, Syntax review | `~/.local/bin/orca terminal create --worktree "<selector>" --title "MiniMax-M3" --command "claude-m3 --permission-mode bypassPermissions --dangerously-skip-permissions" --focus --json` |
-| **Architect / Research** | Antigravity CLI (`agy` Gemini 3.7 Flash) | Pro/Con technical research, `CONTEXT.md` architecture review | `~/.local/bin/orca terminal create --worktree "<selector>" --title "worker-agy" --command "agy --model gemini-3.7-flash-high --dangerously-skip-permissions" --focus --json` |
+| **Coordinator** | Claude Official (Sonnet 5) | Triage, Spec, Gatekeeper, Auto-Merge | `claude` (Profile A) |
+| **Fast Coder** | MiniMax-M3 (Custom Gateway) | Rapid TDD implementation, syntax review | `claude-m3` (Profile B) |
+| **Deep Research** | Antigravity (Gemini 3.7 Flash) | Architecture audit, Blind MR Review | `agy` (Profile C) |
 
-### 3-Tier Hierarchy Rules (Max Depth = 3)
+### 2. Hard Cap Hierarchy (Max Depth = 3)
 ```
-Level 1: Lead Coordinator (Root workspace or Orca Scheduled Automation)
-   │
-   └── Level 2: Feature Worker (Git Worktree: `agent/task-<id>`)
-          │
-          └── Level 3: Leaf Helper (Sub-terminal / Split pane in same worktree)
-                 └── 🚫 Non-Proliferation: NEVER spawn children (Depth <= 3)
-```
-
-1. **Level 1 (Lead Coordinator)**: Owns the Run, creates tasks, dispatches to Level 2 workers, controls Decision Gates.
-2. **Level 2 (Feature Worker)**: Executes `/implement` and `/tdd`. May spawn **at most 1 Level 3 Leaf Helper** (`helper-agy` or `helper-m3`) for assistance.
-3. **Level 3 (Leaf Helper)**: Dedicated task assistant (mock data, documentation lookup). Must execute assigned tasks directly and idle upon completion.
-
----
-
-## State Alignment & Desync Healing (Tự Động Chữa Lệch Trạng Thái)
-
-> ⚠️ **THE DESYNC HEALING RULE**:
-> If a human accidentally drags a card on the Orca UI to the wrong column, or if a terminal session's worktree status deviates from the remote issue label:
-> **The GitHub Issue Label is the authoritative source of truth.**
-
-### 🔄 Pre-Flight Reconciliation Algorithm:
-Whenever a Lead Agent or subagent terminal starts working on task `#<id>`, it MUST run this reconciliation check:
-
-```bash
-# 1. Query remote truth from GitHub:
-REMOTE_LABEL=$(gh issue view <id> --json labels -q '.labels[].name' | grep -E '^(needs-triage|needs-info|ready-for-agent|in-progress|ready-for-human)$' | head -n 1)
-
-# 2. Force-reconcile Orca Workspace Board to match remote label:
-if [ -n "$REMOTE_LABEL" ]; then
-  ~/.local/bin/orca worktree set --worktree active --issue <id> --workspace-status "$REMOTE_LABEL" \
-    --comment "State-heal: aligned Orca workspace card with GitHub label [$REMOTE_LABEL]" --json
-fi
-```
-
-### 🔒 Atomic Dual-Update Invariant:
-When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute status updates as a paired atomic operation:
-1. `gh issue edit <id> --add-label "<new-status>" --remove-label "<old-status>"`
-2. `~/.local/bin/orca worktree set --worktree "<worktree-selector>" --issue <id> --workspace-status "<new-status>" --json`
-
----
-
-## Step-by-Step Execution Process
-
-```
-[Phase 1: Triage & Assurance Selection]
-    │
-    ├── (Fast: Minor <= 5 lines) ──> [Direct Root Fix & Commit] ──> [Done]
-    │
-    └── (Standard / Full) ──> [Phase 2: Orca Run & Worktree Init]
-                                        │
-                                        ▼
-                              [Phase 3: Worker Dispatch & TDD]
-                                        │
-                                        ▼
-                              [Phase 4: Shell Verification / Gauntlet]
-                                        │
-                                        ▼
-                              [Phase 5: Decision Gate & Review]
-                                        │
-                                        ▼
-                              [Phase 6: Release PR & Auto-Merge]
+Level 1: Lead Coordinator (Root workspace / Main branch)
+   └── Level 2: Feature Worker (Git Worktree: agent/task-<id>)
+          └── Level 3: Leaf Helper (Split pane helper in same worktree)
+                 └── 🚫 STRICT PROHIBITION: NEVER spawn children (Depth <= 3)
 ```
 
 ---
 
-### Phase 1: 100% Autonomous Ingestion & Triage
-> ⚠️ **AUTONOMY INVARIANT**: The Coordinator NEVER stops to ask human permission before triaging. Triage executes immediately and autonomously.
+## State Alignment & Desync Healing Rule
 
-1. Fetch issue payload (GitHub or GitLab):
+> 🔄 **State Healing Invariant**: If a user drags a card on the Orca UI to the wrong column, the agent always treats the **GitHub/GitLab Issue Label as the authoritative truth** and automatically reconciles the Orca Workspace Board:
+> ```bash
+> ~/.local/bin/orca worktree set --worktree "<selector>" --workspace-status <authoritativeLabel> --json
+> ```
+
+---
+
+## Core Lifecycle Execution
+
+### Phase 1: Intake, Triage & Assurance Branching
+1. Retrieve issue payload:
    ```bash
-   # GitHub
-   gh issue view <id> --json number,title,body
-   # GitLab
-   glab issue view <id>
+   gh issue view <id> --json number,title,body,labels || glab issue view <id>
    ```
-2. Synchronize workspace card status:
-   ```bash
-   ~/.local/bin/orca worktree set --worktree active --issue <id> --workspace-status needs-triage --comment "Triaging and analyzing scope" --json
-   # GitHub: gh issue edit <id> --add-label "needs-triage"
-   # GitLab: glab issue update <id> --label "needs-triage"
-   ```
-3. Classify **Assurance Level**:
-   - **`Fast` (Minor Fix / Typo / $\le 5$ lines)**:
-     - **Direct Execution Flow**: Do NOT create a Git Worktree.
-     - The Coordinator directly applies the edit in the root workspace, runs `npm test`.
-     - If passing, commits directly: `git commit -am "fix: <title>" && git push origin main`.
-     - Closes issue (`gh issue close <id>` / `glab issue close <id>`) and sets card to `done`.
-     - *End of lifecycle for Fast track.*
-   - **`Standard` (Material Feature / Bugfix)**:
-     - Standard isolated worktree flow. Proceeds to Phase 2 $\rightarrow$ Phase 3 (MiniMax-M3 TDD) $\rightarrow$ Phase 4 (`npm test`) $\rightarrow$ Phase 5 (2-Axis Review) $\rightarrow$ Phase 6 (Auto-Merge).
-   - **`Full` (Sensitive / Core Architecture / Payment API)**:
-     - High-rigor isolated flow. Enforces 9 API Design Gates in `spec.md`, Phase 3 TDD with Negative Control evidence, Phase 4 Full Gauntlet (`scripts/run-gauntlet.sh`), Phase 5 Blind Adversarial Review Gate, and Phase 6 Pre-Merge check (`scripts/verify-premerge.mjs`).
-
-4. Analyze Issue & Branching Decision (for Standard / Full):
-   - **Branch A: Clear & Actionable** ➔ Invoke `/triage` and `/to-spec`.
-     - Write `spec.md` with explicit module interfaces, dependencies, and file modification targets.
-     - **9 API Design Gates (`old-coder-api`)** (Mandatory for Full track / Backend APIs):
-       1. *Boring*: Plural nouns (`/orders`), standard status codes (`400`, `404`, `422`, `429`).
-       2. *Don't break userspace*: Additive optional fields only; never rename/delete existing fields.
-       3. *Simple Auth*: Scoped API keys for machine-to-machine; OAuth for client sessions.
-       4. *Server Authorization*: Enforce tenant/user access server-side; never trust client headers.
-       5. *Idempotency Keys*: Mandatory for mutation operations with side-effects (payments, refunds).
-       6. *Rate Limiting*: Every endpoint scoped with headers (`Retry-After`).
-       7. *Cursor Pagination*: `WHERE id > :cursor LIMIT :n`; strictly avoid `OFFSET`.
-       8. *Expensive fields optional*: Gated behind `?include=...` (disabled by default).
-       9. *No leakage*: Zero database table IDs, internal enums, or raw errors in public JSON.
-     - Transition status to `ready-for-agent`:
-       ```bash
-       ~/.local/bin/orca worktree set --worktree active --issue <id> --workspace-status ready-for-agent --comment "Spec approved, ready for implementation" --json
-       # GitHub: gh issue edit <id> --add-label "ready-for-agent" --remove-label "needs-triage"
-       # GitLab: glab issue update <id> --label "ready-for-agent" --unlabel "needs-triage"
-       ```
-       Proceed directly to Phase 2.
-   - **Branch B: Missing Information / Questions / Ambiguity** ➔ Invoke `/to-questionnaire`. Format structured multiple-choice questions, transition label to `needs-info`, and post questions as a comment on the issue:
-     ```bash
-     ~/.local/bin/orca worktree set --worktree active --issue <id> --workspace-status needs-info --comment "Waiting for human input on requirements" --json
-     # GitHub: gh issue edit <id> --add-label "needs-info" --remove-label "needs-triage" && gh issue comment <id> --body "<questionnaire>"
-     # GitLab: glab issue update <id> --label "needs-info" --unlabel "needs-triage" && glab issue note <id> --message "<questionnaire>"
-     ```
-     Yield turn to wait for human reply on GitHub/GitLab. **DO NOT freeze in an interactive shell loop**.
+2. Classify **Assurance Level**:
+   - **`Fast` Track** (Typo, docs, $\le 5$ lines): Coordinator edits directly in root workspace $\rightarrow$ runs `npm test` $\rightarrow$ commits/pushes $\rightarrow$ closes issue. (Skips Worktree, Phase 3 & 6).
+   - **`Standard` Track** (Bugfix, isolated module): Worktree $\rightarrow$ MiniMax-M3 TDD $\rightarrow$ Unit tests $\rightarrow$ 2-axis Review $\rightarrow$ Auto-Merge.
+   - **`Full` Track** (Core architecture, API changes): Worktree $\rightarrow$ 9 API Gates $\rightarrow$ Full Gauntlet $\rightarrow$ Blind Review Gate $\rightarrow$ Pre-Merge Check $\rightarrow$ Auto-Merge.
+3. For API changes on Full track, verify against [9 API Design Gates](references/api-design-gates.md).
 
 ---
 
 ### Phase 2: Run & Worktree Initialization
-1. Create native Orchestration Run:
+1. Create native Run & Task:
    ```bash
-   RUN_ID=$(~/.local/bin/orca orchestration run-create --objective "Implement task #<id>: <title>" --json | jq -r .result.run.id)
+   RUN_ID=$(~/.local/bin/orca orchestration run-create --objective "Implement task #<id>" --json | jq -r .result.run.id)
+   TASK_ID=$(~/.local/bin/orca orchestration task-create --spec "Implement per spec.md" --task-title "Task #<id>" --json | jq -r .result.task.id)
    ```
-2. Create native Orchestration Task:
-   ```bash
-   TASK_ID=$(~/.local/bin/orca orchestration task-create --spec "Implement feature according to spec.md" --task-title "Task #<id>" --json | jq -r .result.task.id)
-   ```
-3. Create isolated Git Worktree:
+2. Create isolated Git Worktree:
    ```bash
    ~/.local/bin/orca worktree create --name "agent/task-<id>" --setup run --json
    ```
-- **Completion Criterion**: Worktree created at `~/orca/workspaces/<repo>/agent-task-<id>` with active branch.
 
 ---
 
-### Phase 3: Worker Dispatch & Worker Safety Capsule
-1. Launch Coder terminal (MiniMax-M3) in `agent/task-<id>` using Profile B, capturing `<childHandle>`.
-2. Synchronize status:
+### Phase 3: Non-Blocking Dispatch & Safety Capsule
+1. Launch Coder terminal (MiniMax-M3) in `agent/task-<id>`.
+2. Update status to `in-progress`:
    ```bash
-   ~/.local/bin/orca worktree set --worktree "name:agent/task-<id>" --issue <id> --workspace-status in-progress --comment "MiniMax-M3 implementing with TDD" --json
-   # GitHub: gh issue edit <id> --add-label "in-progress" --remove-label "needs-triage,ready-for-agent"
-   # GitLab: glab issue update <id> --label "in-progress" --unlabel "needs-triage,ready-for-agent"
+   ~/.local/bin/orca worktree set --worktree "name:agent/task-<id>" --issue <id> --workspace-status in-progress --json
+   gh issue edit <id> --add-label "in-progress" --remove-label "needs-triage,ready-for-agent"
    ```
-3. Inject **Worker Safety Capsule Contract & Callback Instruction** into dispatch prompt:
+3. Dispatch task with **Worker Safety Capsule & Event Callback**:
    ```bash
    COORDINATOR_HANDLE=$(~/.local/bin/orca terminal list --json 2>/dev/null | jq -r '.[0].id // "active"')
-   ~/.local/bin/orca orchestration dispatch --task $TASK_ID --to <childHandle> --inject --json
    ~/.local/bin/orca terminal send --terminal <childHandle> \
      --text "Task: /implement task #<id>
 === 🛡️ WORKER SAFETY CAPSULE ===
-ROLE: Finite implementation worker (STRICTLY FORBIDDEN from starting sub-orchestration, Depth <= 3).
-OBJECTIVE: Implement task #<id> strictly per spec.md and CONTEXT.md using /tdd.
-EXCLUSIONS: Do NOT touch files outside targeted module; do NOT change project configs.
-AUTHORITY:
-  - Exact Read Paths: [spec.md, CONTEXT.md, targeted source and test files]
-  - Exact Write Paths: [targeted source files, targeted test files]
-  - External Side Effects: NONE (no network mutation, no external publishing)
-SAFETY BOUNDARY:
-  - Never bypass test gates or expose credentials.
+ROLE: Finite implementation worker (Depth <= 3).
+OBJECTIVE: Implement task #<id> strictly per spec.md using /tdd.
+AUTHORITY: Read/write only assigned module files.
 CALLBACK ON COMPLETION:
-  When implementation and tests pass, send completion signal back to wake up Coordinator:
-  ~/.local/bin/orca terminal send --terminal \"$COORDINATOR_HANDLE\" --text \"Task #<id> completed by worker. Triggering Phase 4 verification & review.\" --enter
-================================" \
-     --enter --json
+  When implementation and tests pass, send completion signal back to Coordinator:
+  ~/.local/bin/orca terminal send --terminal \"$COORDINATOR_HANDLE\" --text \"Task #<id> completed by worker. Triggering Phase 4 verification.\" --enter
+================================" --enter --json
    ```
-   *(For watchdog execution with process-tree isolation: `node scripts/relay-exec.mjs fast-coder 900000 run_result.json -p "Task: /implement task #<id>"`)*
-
-4. ⚡ **EVENT-DRIVEN WAKEUP INVARIANT (BÁO CÁO TỰ ĐỘNG - KHÔNG NGỒI SOI)**:
-   > ⚠️ **HOW ASYNC NOTIFICATION WORKS**:
-   > - **Coordinator dispatches and yields turn immediately**: It does NOT run blocking commands (`terminal wait`, `timeout 560`) while the worker is coding.
-   > - **Worker wakes up Coordinator**: As instructed in the Safety Capsule, once the worker finishes, it sends a text message back to the Coordinator's terminal.
-   > - **Reactive Resume**: When the message arrives, the Coordinator wakes up automatically and proceeds immediately to Phase 4 (Shell Verification) and Phase 5/6 (Review & Auto-Merge).
-   > - **Dispatch Notice**:
-   >   ```markdown
-   >   🚀 **Worker Dispatched**: MiniMax-M3 is implementing task `#<id>` in worktree `agent/task-<id>`.
-   >   🔔 Worker will automatically notify this session upon completion to trigger Phase 4 verification.
-   >   ```
-- **Completion Criterion**: Worker terminal launched, callback configured, turn yielded cleanly.
+4. ⚡ **Strict Non-Blocking Rule**: Coordinator prints dispatch notice and **YIELDS THE TURN IMMEDIATELY** (no `terminal wait`, no sleeping loops).
 
 ---
 
 ### Phase 4: Shell Verification & Multi-Layer Gauntlet
+> ⚠️ **Evidence Before Assertions**: Never accept an agent's self-claim of passing tests. The Coordinator MUST execute shell verification directly.
 
-> ⚠️ **MANDATORY INVARIANT (Evidence Before Assertions)**: Never accept an agent's self-claim of passing tests. The Coordinator MUST execute the shell verification directly.
-
-1. Execute test suite / Gauntlet directly in child worktree:
-   ```bash
-   cd ~/orca/workspaces/<repo>/agent-task-<id>
-   # Standard Track:
-   npm test
-   # Full Track:
-   ./scripts/run-gauntlet.sh .
-   ```
-2. **If Exit Code = 0 (PASS)**: Advance directly to Phase 5.
-3. **If Exit Code != 0 (FAIL)**:
-   - **Case A: Minor Failure (Fix-in-Place Rule)**: If the failure is minor (lint, formatting, typo, small $\le 5$ line bug, or missing catch block), the **Coordinator MUST fix it directly in the worktree** and re-run `npm test`. **DO NOT bounce back to the worker for trivial fixes** (saving massive tokens and eliminating 10-minute wait cycles).
-   - **Case B: Major Architectural Failure (Max 2 Bounces)**: If fundamental logic is broken:
-     ```bash
-     ~/.local/bin/orca terminal send --terminal <childHandle> \
-       --text "Tests failed with errors: <error_log>. Activate /diagnosing-bugs and fix the implementation until npm test passes." \
-       --enter --json
-     ```
-     Yield to let worker code in background without holding Coordinator turn.
-   - **If still failing after 2 major attempts**: Set `needs-info`, transition label, and escalate to human.
-- **Completion Criterion**: `npm test` / `run-gauntlet.sh` exit code is 0 in the child worktree.
+```bash
+cd ~/orca/workspaces/<repo>/agent-task-<id>
+# Standard Track:
+npm test
+# Full Track (Gauntlet):
+./scripts/run-gauntlet.sh .
+```
+- If test fails $\le 5$ lines (typo, import): Lead Coordinator fixes directly in place.
+- If test fails > 5 lines: Bounce back to worker (Max 2 times, follow [Bounded Failure Ladder](references/failure-ladder.md)).
 
 ---
 
-### Phase 5: Tripartite Review Committee & Blind Adversarial Gate
-
-1. Lock task with native Decision Gate:
-   ```bash
-   GATE_ID=$(~/.local/bin/orca orchestration gate-create --task $TASK_ID --question "Does the 3-agent committee approve task #<id>?" --options '["yes","no"]' --json | jq -r .result.gate.id)
-   ```
-2. **Review Verification**:
-   - **Standard Track (2-Axis Review)**:
-     - Axis 1 (Standards) via MiniMax-M3: TypeScript types, lint, formatting.
-     - Axis 2 (Spec Compliance) via Claude Official: Verification against `spec.md`.
-   - **Full Track (3-Agent Blind Adversarial Review)**:
-     - Antigravity CLI (Gemini 3.7 Flash High) is fed **ONLY 4 pure inputs** to avoid confirmation bias:
-       1. Issue Requirements (`gh issue view <id>` / `glab issue view <id>`).
-       2. Approved `spec.md`.
-       3. Current Worktree Git Commit SHA.
-       4. Gauntlet Execution Output (`scripts/run-gauntlet.sh`).
-     - Executed safely via Read-Only Tripwire: `./scripts/safe-research.sh ~/orca/workspaces/<repo>/agent-task-<id>`
-3. **Review Finding Remediation**:
-   - **Minor Issues ($\le 5$ lines)**: Coordinator applies quick fixes directly in-place.
-   - **Major Violations**: Reject gate and request targeted worker rewrite.
-4. Resolve Gate & Cleanup:
-   ```bash
-   ~/.local/bin/orca orchestration gate-resolve --id $GATE_ID --resolution "yes" --json
-   ~/.local/bin/orca orchestration worker-release --dispatch <dispatchId> --json
-   ```
-- **Completion Criterion**: Decision Gate resolved with `"yes"`.
+### Phase 5: Blind Adversarial Review Gate
+For Full Track, launch **Antigravity CLI (Gemini 3.7 Flash High)** in independent session with ONLY 4 inputs (no chat history of Coder):
+1. Original Issue Description.
+2. Approved `spec.md`.
+3. Worktree Git Diff (`git diff origin/main...HEAD`).
+4. Gauntlet output report.
 
 ---
 
-### Phase 6: Release, Rebase & Autonomous Auto-Merge MR/PR
-> 🚀 **AUTONOMOUS MERGE INVARIANT**: Once Gemini 3.7 (`agy`) and the 3-Agent Committee approve the review and all unit tests pass, the Coordinator automatically creates, approves, and MERGES the MR/PR and tears down the worktree.
-
-0. **Forbidden-Paths Pre-Merge Check**:
-   Before creating the PR/MR, execute the automated pre-merge checker:
+### Phase 6: Release & Autonomous Merge
+1. Run pre-merge forbidden path check:
    ```bash
-   cd ~/orca/workspaces/<repo>/agent-task-<id> && node scripts/verify-premerge.mjs origin/main
+   node scripts/verify-premerge.mjs origin/main
    ```
-   If it exits with code 1 (diff touches forbidden paths like `.github/workflows/`, secrets, `.env`), **do NOT auto-merge** — transition to `needs-info` and escalate to human.
-
-1. Activate skill `/finishing-a-development-branch`:
-   - Rebase against `origin/main` (invoke `/resolving-merge-conflicts` if needed).
-   - Push feature branch: `git push origin <branch-name>`.
-2. Open & Auto-Merge Pull Request / Merge Request:
-   - **GitLab (`glab`)**:
-     ```bash
-     MR_ID=$(glab mr create --title "feat: resolve issue #<id> - <title>" --description "### 📋 Summary\n- 100% tests verified\n- Approved by 3-Agent Committee (Gemini 3.7 + Claude)\nCloses #<id>" --yes | grep -oP '/merge_requests/\K\d+' || echo "")
-     if [ -n "$MR_ID" ]; then
-       glab mr approve $MR_ID 2>/dev/null || true
-       glab mr merge $MR_ID --auto --remove-source-branch --yes 2>/dev/null || glab mr merge $MR_ID --yes 2>/dev/null || true
-     fi
-     ```
-   - **GitHub (`gh`)**:
-     ```bash
-     gh pr create --title "feat: resolve issue #<id> - <title>" --body "### 📋 Summary\n- 100% tests verified\n- Approved by 3-Agent Committee (Gemini 3.7 + Claude)\nCloses #<id>"
-     gh pr review --approve -b "Approved by 3-Agent Committee (Gemini 3.7 + Claude)" 2>/dev/null || true
-     gh pr merge --auto --merge --delete-branch 2>/dev/null || true
-     ```
-3. Auto-Cleanup Worktree & State Sync:
+2. Commit and push:
    ```bash
-   ~/.local/bin/orca worktree rm --worktree "name:agent/task-<id>" --force --json 2>/dev/null || true
-   ~/.local/bin/orca worktree set --worktree active --issue <id> --workspace-status done --comment "MR merged autonomously" --json
-   # GitHub: gh issue close <id>
-   # GitLab: glab issue close <id>
+   git commit -m "feat: implement task #<id> [skip ci]"
+   git push origin agent/task-<id>
    ```
-- **Completion Criterion**: Feature branch merged into target branch, worktree deleted, issue closed (`done`).
+3. Open MR/PR & Auto-Merge:
+   ```bash
+   gh pr create --title "feat: task #<id>" --body "Automated MR approved by 3-Agent Committee."
+   gh pr merge --auto --squash --delete-branch
+   ```
+4. Close Task, Run, and clean up Worktree:
+   ```bash
+   ~/.local/bin/orca orchestration task-close --task $TASK_ID --json
+   ~/.local/bin/orca worktree rm --worktree "name:agent/task-<id>" --force --json
+   ```
 
 ---
 
-## Question & Blocker Handling & Bounded Failure Ladder
+## Common Rationalizations & Red Flags
 
-### 1. Bounded Failure Ladder (Classify Before Acting)
-Never retry blindly in an infinite loop. Always classify the failure type and apply the strict bounded policy:
+### Rationalization Table
+| Excuse / Rationalization | Reality / Enforced Rule |
+| :--- | :--- |
+| *"I'll wait with `orca terminal wait` so I know when it's done"* | 🚫 **FORBIDDEN**: Freezes Coordinator for 10+ mins, burns thousands of tokens. Use Non-Blocking Dispatch + Event Callback. |
+| *"Worker self-reported 100% tests passed, so I can merge"* | 🚫 **FORBIDDEN**: Evidence before assertions. Coordinator MUST run `npm test` or `run-gauntlet.sh` directly. |
+| *"I'll do a quick fix directly on main branch without worktree"* | 🚫 **FORBIDDEN**: Only `Fast` track ($\le 5$ lines) is permitted on root. Standard and Full MUST use isolated worktrees. |
+| *"Worker can spawn sub-workers who spawn more workers"* | 🚫 **FORBIDDEN**: Hard cap max depth = 3. Leaf helpers cannot spawn children. |
+| *"Merge directly even if forbiddenPaths check fails"* | 🚫 **FORBIDDEN**: Any forbidden path change requires human approval. Escalate to `needs-info`. |
 
-| Failure Type | Autonomous Action | Budget / Limit |
-| :--- | :--- | :--- |
-| **Transient transport / runtime network error** | Retry with the exact same configuration. | Max **1 retry**. |
-| **Quota, auth, missing tool, or provider down** | **DO NOT repeat unchanged**; failover immediately to an alternate lane in `fleet.json` (e.g. MiniMax-M3 $\rightarrow$ Claude). | Max **1 reallocation**. |
-| **Worker Stall (Unresponsive terminal / loop)** | Probe liveness once with short prompt; if still dead, terminate via `relay-exec` (`process.kill(-pid, "SIGKILL")`) and reallocate. | Max **1 recovery**. |
-| **Path / Interface / Shared State collision** | Halt concurrent worker dispatches immediately and serialize execution order. | Immediate serialization. |
-| **Malformed completion payload** | Request format-only fix (`run_result.json`) without re-running passed implementation code. | Max **1 format fix**. |
-| **Quality / Acceptance failure** | Apply Fix-in-Place ($\le 5$ lines) or bounce back to Coder with targeted error log. | Max **2 bounces**. |
-| **Safety / Gate violation** | Halt affected path immediately; never route around gates or bypass checks. | Hard stop & escalate. |
+### 🚩 Red Flags - STOP and Start Over
+- Running `orca terminal wait` or `timeout 500+` in Lead Coordinator session.
+- Trusting worker's self-claim without running test commands directly.
+- Editing CI/CD workflows, `.env` files, or production secrets autonomously.
+- Spawning beyond Depth Level 3.
 
 ---
 
-### 2. 2-Tier Question & Blocker Hierarchy
-
-- **Tier 1 (Technical / In-Scope Questions)**:
-  - Subagent calls:
-    ```bash
-    ~/.local/bin/orca orchestration ask --to <coordinatorHandle> --question "<question>" --options "optA,optB" --json
-    ```
-  - Coordinator reads `spec.md` or `CONTEXT.md` and replies via `~/.local/bin/orca orchestration reply --message <id> --answer "<answer>" --json`.
-- **Tier 2 (Business / Missing Credentials / Human Escalation)**:
-  > ⚠️ **3-ACTION ESCALATION INVARIANT**: Relabeling alone is not escalation — it's a card sitting silently in a column nobody is watching. Whenever transitioning to `needs-info` for a human decision, the Coordinator MUST perform all three actions atomically, never just one:
-  1. Post a comment stating the concrete question, the options considered, and which option the Coordinator leans toward and why:
-     ```bash
-     gh issue comment <id> --body "### ❓ Clarification Needed for Task #<id>\n<questionnaire>\n\n**Coordinator's lean:** <option> — <one-line reason>"
-     # GitLab: glab issue note <id> --message "..."
-     ```
-  2. Transition label and assign back to the human owner:
-     ```bash
-     gh issue edit <id> --add-label "needs-info" --remove-label "<old-status>" --add-assignee "<owner>"
-     # GitLab: glab issue update <id> --label needs-info --unlabel <old-status> --assignee <owner>
-     ```
-  3. Send an active notification (not just a passive label change) so the human actually sees it, e.g. via the `PushNotification` tool or equivalent: a one-line "`#<id> blocked: <question>`".
+## Reference Documents
+- [9 API Design Gates](references/api-design-gates.md)
+- [7-Step Bounded Failure Ladder](references/failure-ladder.md)
+- [Worker Safety Capsule Contract](references/safety-capsule.md)
