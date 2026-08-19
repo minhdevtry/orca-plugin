@@ -97,20 +97,37 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
 [Phase 5: Decision Gate & 3-Agent Review] ──> [Phase 6: Release PR & Sync]
 ```
 
-### Phase 1: Ingestion & Triage
-1. Fetch issue payload:
+### Phase 1: 100% Autonomous Ingestion & Triage
+> ⚠️ **AUTONOMY INVARIANT**: The Coordinator NEVER stops to ask human permission before triaging. Triage executes immediately and autonomously.
+
+1. Fetch issue payload (GitHub or GitLab):
    ```bash
+   # GitHub
    gh issue view <id> --json number,title,body
+   # GitLab
+   glab issue view <id>
    ```
 2. Synchronize workspace card status:
    ```bash
-   orca worktree set --worktree active --issue <id> --workspace-status needs-triage --comment "Triaging and generating spec" --json
-   gh issue edit <id> --add-label "needs-triage"
+   orca worktree set --worktree active --issue <id> --workspace-status needs-triage --comment "Triaging and analyzing scope" --json
+   # GitHub: gh issue edit <id> --add-label "needs-triage"
+   # GitLab: glab issue update <id> --label "needs-triage"
    ```
-3. Invoke `/triage` and `/to-spec` skills:
-   - Analyze Consensus, Risk, and Breakthrough perspectives against `CONTEXT.md`.
-   - Write `spec.md` with explicit module interfaces, dependencies, and file modification targets.
-- **Completion Criterion**: `spec.md` exists and card is labeled `ready-for-agent`.
+3. Analyze Issue & Branching Decision:
+   - **Branch A: Clear & Actionable** ➔ Invoke `/triage` and `/to-spec`. Write `spec.md`, transition status to `ready-for-agent`:
+     ```bash
+     orca worktree set --worktree active --issue <id> --workspace-status ready-for-agent --comment "Spec approved, ready for implementation" --json
+     # GitHub: gh issue edit <id> --add-label "ready-for-agent" --remove-label "needs-triage"
+     # GitLab: glab issue update <id> --label "ready-for-agent" --unlabel "needs-triage"
+     ```
+     Proceed directly to Phase 2.
+   - **Branch B: Missing Information / Questions / Ambiguity** ➔ Invoke `/to-questionnaire`. Format structured multiple-choice questions, transition label to `needs-info`, and post questions as a comment on the issue:
+     ```bash
+     orca worktree set --worktree active --issue <id> --workspace-status needs-info --comment "Waiting for human input on requirements" --json
+     # GitHub: gh issue edit <id> --add-label "needs-info" --remove-label "needs-triage" && gh issue comment <id> --body "<questionnaire>"
+     # GitLab: glab issue update <id> --label "needs-info" --unlabel "needs-triage" && glab issue note <id> --message "<questionnaire>"
+     ```
+     Yield turn to wait for human reply on GitHub/GitLab. **DO NOT freeze in an interactive shell loop**.
 
 ---
 
@@ -136,7 +153,8 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
 2. Synchronize status:
    ```bash
    orca worktree set --worktree "name:agent/task-<id>" --issue <id> --workspace-status in-progress --comment "MiniMax-M3 implementing with TDD" --json
-   gh issue edit <id> --add-label "in-progress" --remove-label "needs-triage,ready-for-agent"
+   # GitHub: gh issue edit <id> --add-label "in-progress" --remove-label "needs-triage,ready-for-agent"
+   # GitLab: glab issue update <id> --label "in-progress" --unlabel "needs-triage,ready-for-agent"
    ```
 3. Dispatch task with preamble and instructions:
    ```bash
@@ -183,7 +201,7 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
    ```
 2. Execute 2-Axis `/code-review` across parallel agents:
    - **Axis 1 (Standards)** via **MiniMax-M3**: TypeScript types, lint, formatting, typos, smell baseline.
-   - **Axis 2 (Architecture & Spec)** via **Antigravity CLI**: Module boundaries, `CONTEXT.md` adherence, filtering false positives.
+   - **Axis 2 (Architecture & Spec)** via **Antigravity CLI (Gemini 3.7 Flash High)**: Module boundaries, `CONTEXT.md` adherence, filtering false positives.
    - **Axis 3 (Spec Compliance)** via **Claude Official**: Verification against `spec.md`.
 3. **Review Finding Remediation**:
    - **Minor Issues**: The Reviewing Coordinator applies quick fixes directly to the branch in-place.
@@ -197,29 +215,35 @@ When advancing through the 6-stage lifecycle, the Agent MUST ALWAYS execute stat
 
 ---
 
-### Phase 6: Release, Rebase & PR Synchronization
+### Phase 6: Release, Rebase & Autonomous Auto-Merge MR/PR
+> 🚀 **AUTONOMOUS MERGE INVARIANT**: Once Gemini 3.7 (`agy`) and the 3-Agent Committee approve the review and all unit tests pass, the Coordinator automatically creates, approves, and MERGES the MR/PR and tears down the worktree.
+
 1. Activate skill `/finishing-a-development-branch`:
-   - Check rebase against `origin/main` (invoke `/resolving-merge-conflicts` if needed).
-   - Push feature branch: `git push origin minhdevtry/agent-task-<id>`.
-2. Open Pull Request:
+   - Rebase against `origin/main` (invoke `/resolving-merge-conflicts` if needed).
+   - Push feature branch: `git push origin <branch-name>`.
+2. Open & Auto-Merge Pull Request / Merge Request:
+   - **GitLab (`glab`)**:
+     ```bash
+     MR_ID=$(glab mr create --title "feat: resolve issue #<id> - <title>" --description "### 📋 Summary\n- 100% tests verified\n- Approved by 3-Agent Committee (Gemini 3.7 + Claude)\nCloses #<id>" --yes | grep -oP '/merge_requests/\K\d+' || echo "")
+     if [ -n "$MR_ID" ]; then
+       glab mr approve $MR_ID 2>/dev/null || true
+       glab mr merge $MR_ID --auto --remove-source-branch --yes 2>/dev/null || glab mr merge $MR_ID --yes 2>/dev/null || true
+     fi
+     ```
+   - **GitHub (`gh`)**:
+     ```bash
+     gh pr create --title "feat: resolve issue #<id> - <title>" --body "### 📋 Summary\n- 100% tests verified\n- Approved by 3-Agent Committee (Gemini 3.7 + Claude)\nCloses #<id>"
+     gh pr review --approve -b "Approved by 3-Agent Committee (Gemini 3.7 + Claude)" 2>/dev/null || true
+     gh pr merge --auto --merge --delete-branch 2>/dev/null || true
+     ```
+3. Auto-Cleanup Worktree & State Sync:
    ```bash
-   gh pr create --title "feat: resolve issue #<id> - <title>" \
-     --body "### 📋 Summary
-- Spec compliance verified via \`/to-spec\`.
-- 100% Unit Tests verified via \`/tdd\`.
-- Approved by 3-Agent Review Committee (MiniMax-M3 + Antigravity + Claude).
-Closes #<id>"
+   orca worktree rm --worktree "name:agent/task-<id>" --force --json 2>/dev/null || true
+   orca worktree set --worktree active --issue <id> --workspace-status done --comment "MR merged autonomously" --json
+   # GitHub: gh issue close <id>
+   # GitLab: glab issue close <id>
    ```
-3. Synchronize status:
-   ```bash
-   orca worktree set --worktree active --issue <id> --workspace-status ready-for-human --comment "PR opened, ready for human review" --json
-   gh issue edit <id> --add-label "ready-for-human" --remove-label "in-progress"
-   ```
-4. Open Orca Diff Viewer for human review:
-   ```bash
-   orca file open-changed --mode diff --worktree "name:agent/task-<id>" --json
-   ```
-- **Completion Criterion**: PR opened and Diff Viewer displayed.
+- **Completion Criterion**: Feature branch merged into target branch, worktree deleted, issue closed (`done`).
 
 ---
 

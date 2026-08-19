@@ -4,11 +4,9 @@
 
 This repository operates on a **100% Native Multi-Agent Architecture** in Orca ADE, integrating the **Matt Pocock Skills Framework (`mattpocock/skills`)** with **Orca Native Orchestration** across a specialized 3-agent fleet:
 
-* **Claude Official (Sonnet 5 / Claude Team)**: Triage, Spec & Lead Coordinator.
+* **Claude Official (Sonnet 5 / Claude Team)**: Autonomous Triage, Spec & Lead Coordinator.
 * **MiniMax-M3 (Custom Gateway)**: Fast Coding, TDD Implementation & Syntax Review.
-* **Antigravity CLI (`agy` - Gemini 3.7 Flash High)**: Technical Research & Architecture Review.
-
-/
+* **Antigravity CLI (`agy` - Gemini 3.7 Flash High)**: Technical Research, Architecture Audit & Autonomous MR Approval.
 
 ***
 
