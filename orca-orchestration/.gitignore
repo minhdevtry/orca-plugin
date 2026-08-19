@@ -5,8 +5,7 @@ out/
 .tmp/
 *.log
 
-# Sub-repositories & References
-dsh-ha-orchestrator/
+# Reference repos & upstream sources
 ref/
 .ref/
 
