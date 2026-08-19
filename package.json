@@ -4,7 +4,12 @@
   "description": "Orca Native Multi-Agent Orchestration with Matt Pocock Skills",
   "type": "module",
   "scripts": {
-    "test": "echo \"Ready: 100% Native Orca Multi-Agent Architecture with Matt Pocock Skills\""
+    "test": "node scripts/verify-premerge.mjs HEAD && echo '✅ All Orca Multi-Agent scripts & configurations verified'",
+    "premerge": "node scripts/verify-premerge.mjs",
+    "relay": "node scripts/relay-exec.mjs",
+    "gauntlet": "bash scripts/run-gauntlet.sh .",
+    "research:safe": "bash scripts/safe-research.sh .",
+    "setup": "bash scripts/setup-agent-profiles.sh"
   },
   "keywords": [
     "orca",

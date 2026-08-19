@@ -10,6 +10,12 @@ cd "$WORKTREE_DIR"
 
 echo "=== 🛡️ [Orca ADE] BẮT ĐẦU VÕ ĐÀI KIỂM ĐỊNH GAUNTLET ==="
 
+# 0. Pre-Merge Forbidden Paths Check
+if [ -f "scripts/verify-premerge.mjs" ]; then
+  echo "🔒 0. [PRE-MERGE] Kiểm tra đường dẫn cấm theo fleet.json..."
+  node scripts/verify-premerge.mjs HEAD || exit 1
+fi
+
 # 1. TypeCheck & Linter Scan
 echo "🔍 1. [LINT & TYPES] Kiểm tra cú pháp, kiểu dữ liệu và code smells..."
 if [ -f "package.json" ] && grep -q '"tsc"' package.json; then
