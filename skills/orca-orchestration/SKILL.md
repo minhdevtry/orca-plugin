@@ -209,10 +209,15 @@ SAFETY BOUNDARY:
    ```
    *(For watchdog execution with process-tree isolation: `node scripts/relay-exec.mjs fast-coder 900000 run_result.json -p "Task: /implement task #<id>"`)*
 
-4. **Supervised Execution Modes**:
-   - **Autonomous Mode (Default)**: Probe in short 15-second intervals via `~/.local/bin/orca orchestration check --types worker_done --timeout-ms 15000 --json`. Cap probing at 40 iterations (~10 minutes) per attempt.
-   - **Interactive Mode**: If started manually by human, report status and yield.
-- **Completion Criterion**: Subagent finishes implementation and worktree is ready for verification.
+4. 🚫 **STRICT NON-BLOCKING INVARIANT (CẤM NGỒI CHỜ / CẤM TERMINAL WAIT)**:
+   > ⚠️ **ZERO-WAITING RULE**: Once the Coordinator sends the dispatch command to the worker terminal, the Coordinator **MUST YIELD THE TURN IMMEDIATELY**.
+   > - **ABSOLUTELY FORBIDDEN**: Calling `~/.local/bin/orca terminal wait`, `timeout 560 ...`, `sleep`, or any synchronous waiting loops. Doing so freezes the Coordinator for 10–15 minutes, burning thousands of wasted tokens in "Puttering / Photosynthesizing" mode.
+   > - **Immediate Output & Stop**: The Coordinator prints a short 2-line dispatch notice and **STOPS calling tools to end its turn immediately**:
+   >   ```markdown
+   >   🚀 **Worker Dispatched**: MiniMax-M3 is implementing task `#<id>` in worktree `agent/task-<id>`.
+   >   👉 You can monitor live in the Orca UI. When worker finishes, simply tell me to **"review task #<id>"** to trigger Phase 4-6 (Gauntlet, Blind Review & Auto-Merge).
+   >   ```
+- **Completion Criterion**: Worker terminal launched, task payload sent, turn yielded cleanly.
 
 ---
 
