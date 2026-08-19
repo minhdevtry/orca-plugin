@@ -37,7 +37,7 @@ For the full end-to-end 6-stage lifecycle, exact CLI commands, Decision Gates, a
 | **Done** | (Closed) | `done` | `/handoff` | Lead Coordinator |
 | **Reject** | `wontfix` | `wontfix` | — | Lead Coordinator |
 
-> 🔄 **State Healing Invariant**: If a user drags a card on the Orca UI to the wrong column, the agent always treats the **GitHub Issue Label as the authoritative truth** and automatically reconciles the Orca Workspace Board (`orca worktree set --workspace-status <label>`).
+> 🔄 **State Healing Invariant**: If a user drags a card on the Orca UI to the wrong column, the agent always treats the **GitHub Issue Label as the authoritative truth** and automatically reconciles the Orca Workspace Board (`~/.local/bin/orca worktree set --workspace-status <label>`).
 
 ***
 

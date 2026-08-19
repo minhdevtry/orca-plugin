@@ -1,25 +1,86 @@
 #!/usr/bin/env node
 // scripts/relay-exec.mjs (Zero Dependencies)
-// Process-Tree Group Kill & Watchdog Timeout Wrapper
-import { spawn } from "node:child_process";
-import { writeFileSync } from "node:fs";
+// Process-Tree Group Kill, Watchdog Timeout & Canonical Result Contract Generator
 
-const [, , cmd, timeoutStr, outJsonPath, ...args] = process.argv;
+import { spawn, execSync } from "node:child_process";
+import { writeFileSync, readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
 
-if (!cmd) {
-  console.error("Usage: node scripts/relay-exec.mjs <cmd> <timeoutMs> <outJsonPath> [args...]");
+const [, , cmdOrLane, timeoutOrJson, outJsonOrArg, ...restArgs] = process.argv;
+
+if (!cmdOrLane) {
+  console.error("Usage: node scripts/relay-exec.mjs <lane|command> [timeoutMs|outJsonPath] [outJsonPath] [args...]");
   process.exit(1);
 }
 
-const timeoutMs = parseInt(timeoutStr, 10) || 600000; // Mặc định 10 phút
+// Ensure ~/.local/bin is in PATH
+const localBin = resolve(homedir(), ".local/bin");
+if (!process.env.PATH?.includes(localBin)) {
+  process.env.PATH = `${localBin}:${process.env.PATH || ""}`;
+}
 
-console.log(`[Relay] 🚀 Đang khởi chạy: ${cmd} ${args.join(" ")} (Timeout: ${timeoutMs}ms)`);
+// 1. Read fleet.json if available
+let fleetConfig = null;
+const fleetPath = resolve(process.cwd(), "fleet.json");
+if (existsSync(fleetPath)) {
+  try {
+    fleetConfig = JSON.parse(readFileSync(fleetPath, "utf8"));
+  } catch (e) {
+    console.warn(`[Relay] ⚠️ Failed to parse fleet.json: ${e.message}`);
+  }
+}
+
+// 2. Resolve Command & Lane
+let executable = cmdOrLane;
+let defaultTimeoutMs = 600000; // 10 mins
+
+if (fleetConfig?.lanes?.[cmdOrLane]) {
+  const lane = fleetConfig.lanes[cmdOrLane];
+  executable = lane.binary || lane.command || cmdOrLane;
+  if (lane.timeout) {
+    const match = String(lane.timeout).match(/^(\d+)([smh])?$/);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      const unit = match[2] || "ms";
+      if (unit === "s") defaultTimeoutMs = val * 1000;
+      else if (unit === "m") defaultTimeoutMs = val * 60000;
+      else if (unit === "h") defaultTimeoutMs = val * 3600000;
+      else defaultTimeoutMs = val;
+    }
+  }
+}
+
+// 3. Parse arguments
+let timeoutMs = defaultTimeoutMs;
+let outJsonPath = "run_result.json";
+let targetArgs = [];
+
+if (timeoutOrJson && !isNaN(Number(timeoutOrJson))) {
+  timeoutMs = Number(timeoutOrJson);
+  if (outJsonOrArg) {
+    if (outJsonOrArg.endsWith(".json")) {
+      outJsonPath = outJsonOrArg;
+      targetArgs = restArgs;
+    } else {
+      targetArgs = [outJsonOrArg, ...restArgs];
+    }
+  }
+} else if (timeoutOrJson && timeoutOrJson.endsWith(".json")) {
+  outJsonPath = timeoutOrJson;
+  if (outJsonOrArg) targetArgs = [outJsonOrArg, ...restArgs];
+} else if (timeoutOrJson) {
+  targetArgs = [timeoutOrJson, ...(outJsonOrArg ? [outJsonOrArg] : []), ...restArgs];
+}
+
+console.log(`[Relay] 🚀 Launching: ${executable} ${targetArgs.join(" ")} (Timeout: ${timeoutMs}ms)`);
 
 const startTime = Date.now();
-const child = spawn(cmd, args, {
+const child = spawn(executable, targetArgs, {
   stdio: ["inherit", "pipe", "pipe"],
-  detached: process.platform !== "win32", // Tạo process group riêng trên Linux/macOS
-  env: process.env
+  detached: process.platform !== "win32",
+  env: process.env,
+  shell: true
 });
 
 let stdoutBuffer = "";
@@ -40,9 +101,9 @@ if (child.stderr) {
 }
 
 const timer = setTimeout(() => {
-  console.error(`\n[Relay] ⚠️ Đã vượt quá timeout ${timeoutMs}ms! Đang dọn sạch Process Tree...`);
+  console.error(`\n[Relay] ⚠️ Timeout of ${timeoutMs}ms exceeded! Terminating process tree...`);
   killProcessTree(child);
-  saveResult("timeout", 124);
+  saveCanonicalResult("timeout", 124);
 }, timeoutMs);
 
 function killProcessTree(proc) {
@@ -50,17 +111,33 @@ function killProcessTree(proc) {
     spawn("taskkill", ["/pid", proc.pid.toString(), "/T", "/F"]);
   } else {
     try {
-      // Kill toàn bộ process group (tránh leak child processes)
-      process.kill(-proc.pid, "SIGKILL");
+      if (proc.pid) process.kill(-proc.pid, "SIGKILL");
     } catch {
-      proc.kill("SIGKILL");
+      try {
+        if (proc.pid) proc.kill("SIGKILL");
+      } catch {}
     }
   }
 }
 
-function saveResult(status, code, signal = null) {
+function getTouchedFiles() {
+  try {
+    const output = execSync("git status --porcelain", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return output
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => line.replace(/^[AMD?RCU\s]+\s+/, ""));
+  } catch {
+    return [];
+  }
+}
+
+function saveCanonicalResult(status, code, signal = null) {
   clearTimeout(timer);
   const durationMs = Date.now() - startTime;
+  const touchedFiles = getTouchedFiles();
+
   const result = {
     version: "orca-relay.v1",
     status,
@@ -69,21 +146,30 @@ function saveResult(status, code, signal = null) {
     durationMs,
     durationFormatted: `${(durationMs / 1000).toFixed(1)}s`,
     timestamp: new Date().toISOString(),
-    stderrPreview: stderrBuffer.slice(-1000)
+    touchedFiles,
+    stderrPreview: stderrBuffer.slice(-1000).trim()
   };
+
   if (outJsonPath) {
     try {
       writeFileSync(outJsonPath, JSON.stringify(result, null, 2));
-      console.log(`[Relay] 💾 Đã lưu kết quả thực thi vào: ${outJsonPath}`);
+      console.log(`[Relay] 💾 Saved canonical run result to: ${outJsonPath} (${touchedFiles.length} touched files)`);
     } catch (err) {
-      console.error(`[Relay] ❌ Lỗi khi ghi file ${outJsonPath}:`, err.message);
+      console.error(`[Relay] ❌ Error writing ${outJsonPath}:`, err.message);
     }
   }
 }
 
+child.on("error", (err) => {
+  clearTimeout(timer);
+  console.error(`[Relay] ❌ Process execution error: ${err.message}`);
+  saveCanonicalResult("failed", 1);
+  process.exit(1);
+});
+
 child.on("close", (code, signal) => {
   clearTimeout(timer);
   const status = code === 0 ? "completed" : (code === 137 ? "oom_killed" : "failed");
-  saveResult(status, code, signal);
+  saveCanonicalResult(status, code, signal);
   process.exit(code ?? 1);
 });

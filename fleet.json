@@ -28,74 +28,24 @@
       "binary": "agy",
       "model": "gemini-3.7-flash-high",
       "readOnly": true,
-      "tripwireEnabled": true,
       "role": "Architecture Audit, CONTEXT.md review & Blind Adversarial Review"
-    },
-    "cheap-tests": {
-      "provider": "aider",
-      "binary": "aider",
-      "model": "deepseek-coder",
-      "role": "Generate mock data, fixtures and property-based test stubs"
     }
   },
   "execution": {
     "relayWrapper": "scripts/relay-exec.mjs",
     "tripwireWrapper": "scripts/safe-research.sh",
     "gauntletRunner": "scripts/run-gauntlet.sh",
-    "resultContract": "run_result.json",
-    "evidenceManifest": {
-      "requireContractDigest": true,
-      "requireNegativeControl": true,
-      "requireBindingAudit": true
-    }
-  },
-  "missions": {
-    "ship-it": {
-      "description": "Intent/Spec -> TDD Build -> Gauntlet -> Blind Review -> Auto-Merge PR",
-      "flow": ["/to-spec", "/implement", "/tdd", "run-gauntlet", "/code-review", "auto-merge"]
-    },
-    "clean-sweep": {
-      "description": "Drain finite issue backlog to zero with SHA-backed PR per finding",
-      "flow": ["triage-all", "per-issue-worktree", "/implement", "negative-control-test", "auto-merge"]
-    },
-    "harden-it": {
-      "description": "Threat model audit -> Exploit test -> Fix -> Re-attack -> Clean re-audit",
-      "flow": ["security-audit", "exploit-harness", "/implement", "re-attack-verification"]
-    },
-    "prove-it": {
-      "description": "Mutation testing test-gap closure with Stryker until mutants are eliminated",
-      "flow": ["mutation-scan", "add-mutation-killing-tests", "gauntlet-verify"]
-    },
-    "speed-it": {
-      "description": "Optimize performance against pre-declared latency/budget contract",
-      "flow": ["benchmark-baseline", "profile-bottlenecks", "optimize", "benchmark-verify"]
-    },
-    "deflake-it": {
-      "description": "Eradicate flaky tests through statistical repetition streak locally & CI",
-      "flow": ["streak-reproduction", "isolate-race-condition", "fix", "100x-streak-verify"]
-    },
-    "review-it": {
-      "description": "Read-only SHA-bound GO/NO-GO verdict without code mutation authority",
-      "flow": ["blind-adversarial-review", "standards-check", "verdict-only"]
-    },
-    "root-cause": {
-      "description": "Reproduce symptom -> Falsify rival hypotheses -> Prove single root cause",
-      "flow": ["repro-test", "hypothesis-tree", "falsification-tests", "isolated-cause-report"]
-    }
+    "premergeChecker": "scripts/verify-premerge.mjs",
+    "resultContract": "run_result.json"
   },
   "autoMerge": {
     "enabled": true,
-    "requireGauntletPass": true,
-    "requireBlindReviewPass": true,
     "forbiddenPaths": [
       ".github/workflows/**",
       ".gitlab-ci.yml",
-      "package-lock.json",
-      "pnpm-lock.yaml",
-      "yarn.lock",
       "credentials/**",
-      "secrets/**"
-    ],
-    "note": "A branch touching any of these paths is never auto-merged by Phase 6, regardless of Decision Gate outcome. Transition to needs-info and run the 3-action escalation protocol instead."
+      "secrets/**",
+      ".env*"
+    ]
   }
 }

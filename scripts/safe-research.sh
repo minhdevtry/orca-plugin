@@ -4,6 +4,8 @@
 
 set -e
 
+export PATH="$HOME/.local/bin:$PATH"
+
 WORKTREE_DIR="${1:-.}"
 BRIEF_FILE="${2:-}"
 

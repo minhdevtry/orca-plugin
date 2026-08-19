@@ -3,6 +3,8 @@
 # Multi-Layer Quality Gauntlet & Extreme Verification Runner
 set -e
 
+export PATH="$HOME/.local/bin:$PATH"
+
 WORKTREE_DIR="${1:-.}"
 cd "$WORKTREE_DIR"
 
